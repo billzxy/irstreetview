@@ -24,7 +24,7 @@ class MapContainer extends Component {
     }
 
     showComponent(i){
-        if(i!=true&&i!=false) return;
+        if(i!==true&&i!==false) return;
         this.setState({showComp:i});
     }
 
@@ -71,5 +71,5 @@ class MapContainer extends Component {
     }
 }
 export default GoogleApiWrapper({
-    apiKey: 'AIzaSyAx1JlYZraAyA32Lsa5s6J_sbUOItWl87k'
+    apiKey: `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
   })(MapContainer);

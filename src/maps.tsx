@@ -43,7 +43,7 @@ class MapContainer extends Component {
              lng: coord.lng
            }}
            onClick={(e) => {
-               console.log("Click");
+               //console.log("Click");
                this.showComponent(false);
                return this.gotoPano(e.lid);
                 

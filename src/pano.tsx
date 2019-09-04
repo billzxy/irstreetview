@@ -1,8 +1,11 @@
-import React, { Component } from "react";
+import React, { Component, useRef } from "react";
 import * as THREE from "three";
-import { Canvas, useThree } from 'react-three-fiber'
+import { Canvas, useThree, useRender } from 'react-three-fiber'
 import './style/pano.css'
 import api from './api/index'
+//import { EffectComposer } from './postprocessing/EffectComposer'
+
+const TWEEN = require('@tweenjs/tween.js');
 
 type PanoProps = {lid: number}
 type PanoState = {lid: number, isLoading: boolean, filename: string}
@@ -16,32 +19,43 @@ class Pano extends Component<PanoProps, PanoState> {
             isLoading: true,
             filename: undefined
         }
-        this.getPanoFilename();
-        this.PanoMain = this.PanoMain.bind(this);
+        this.getPanoAttributes(this.props.lid);
+        this.RenderPano = this.RenderPano.bind(this);
+        //this.RenderComposite = this.RenderComposite.bind(this);
     }
 
-    getPanoFilename = async () => {
+    getPanoAttributes= async (id) => {
         this.setState({ isLoading: true })
-        await api.getPanoFileNameById(this.props.lid).then(result =>{
-            console.log(result.data.filename);
+        await api.getPanoAllAttrById(id).then(result =>{
+            console.log(result.data.data.filename);
             this.setState({
-                filename: result.data.filename,
-                isLoading: false,
+                filename: result.data.data.filename,
+                isLoading: false
             })
+            this.calibration = result.data.data.calibration
         })
     }
+    calibration = undefined
+    boxRef = React.createRef();
+    isUpdating = false;
+    //fname = this.state.filename;
     
-
-    PanoMain() {
-        var { gl, camera, canvas, scene } = useThree()
+    RenderPano() {
+        var direction = 2.54;
+        var mainCam = useRef();
+        var { gl, camera, canvas, scene } = useThree();
+        //console.log(camera);
+        //camera = mainCam.current;
+        //console.log(camera)
+        //console.log(mainCam);
+        (camera as any).fov = 40;
         gl.setSize(window.innerWidth, window.innerHeight)
-        camera.position.z = 0
-        camera.lookAt(1, 0, 0)
-
+        camera.position.set(0,0,0)
+        camera.lookAt(0,0,0)
+        
         var mouseDown = false,
             mouseX = 0,
             mouseY = 0;
-
 
         function onMouseMove(evt) {
             if (!mouseDown) {
@@ -73,44 +87,173 @@ class Pano extends Component<PanoProps, PanoState> {
         function rotateScene(deltaX, deltaY) {
             camera.rotation.y += deltaX / 500;
             //camera.rotation.x += deltaY / 500;
+            console.log(camera.rotation.y);
         }
+        
+        var cylindergeometry = undefined;
+        var cylindermaterial = undefined;
+        var cylindermesh = undefined;
+        var texture = undefined;
+        
+
+        var camZoom = ()=> {
+            this.isUpdating=true;
+            const depth = 12.5;
+            const resFov = 100;
+            var zoom = {
+              zVal: (camera as any).position.z,
+              xVal: (camera as any).position.x,
+              fovValue: (camera as any).fov // from current zoom (no matter if it's more or less than 1)
+            };
+            var zoomEnd = {
+              zVal: -depth *Math.cos(-camera.rotation.y),
+              xVal: depth * Math.sin(-camera.rotation.y),
+              fovValue: resFov
+            };
+            var tween = new TWEEN.Tween(zoom).to(zoomEnd, 500); // duration of tweening is 0.5 second
+
+            tween.onUpdate(function() {
+              (camera as any).position.z = zoom.zVal;
+              (camera as any).position.x = zoom.xVal;
+              (camera as any).fov = zoom.fovValue;
+              (camera as any).updateProjectionMatrix();
+            });
+            tween.onComplete(()=>{
+                (camera as any).position.z = 0;
+                (camera as any).position.x = 0;
+                (camera as any).fov = 40;
+                (camera as any).updateProjectionMatrix();
+                
+                cylindermaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                cylindermesh = new THREE.Mesh(cylindergeometry, cylindermaterial);
+                cylindermesh.position.y = 2
+                scene.add(cylindermesh);
+                //camera.rotation.y = direction;
+                //this.setState({filename:"pano-20190724143833-mx.png"});
+                
+            ;});
+
+            
+        
+            tween.start();
+        }
+        /*
+        const composer = new THREE.EffectComposer(renderer);
+
+        var MotionBlur = () => {
+            // render pass
+            const renderPass = new THREE.RenderPass(scene, camera);
+
+            const renderTargetParameters = {
+                minFilter: THREE.LinearFilter,
+                magFilter: THREE.LinearFilter,
+                stencilBuffer: false
+            };
+
+            // save pass
+            const savePass = new THREE.SavePass(
+                new THREE.WebGLRenderTarget(
+                    container.clientWidth,
+                    container.clientHeight,
+                    renderTargetParameters
+                )
+            );
+
+            // blend pass
+            const blendPass = new THREE.ShaderPass(THREE.BlendShader, "tDiffuse1");
+            blendPass.uniforms["tDiffuse2"].value = savePass.renderTarget.texture;
+            blendPass.uniforms["mixRatio"].value = 0.8;
+
+            // output pass
+            const outputPass = new THREE.ShaderPass(THREE.CopyShader);
+            outputPass.renderToScreen = true;
+
+            // adding passes to composer
+            composer.addPass(renderPass);
+            composer.addPass(blendPass);
+            composer.addPass(savePass);
+            composer.addPass(outputPass);
+
+        }*/
+        
         //TODO: texture is wrongly attached inside out
         var loader = new THREE.TextureLoader();
-        let fname = this.state.filename;
-        var texture = loader.load(process.env.PUBLIC_URL + 'resource/'+fname, undefined, undefined, err => {
-            console.error(err)
-        });
+        cylindergeometry = new THREE.CylinderBufferGeometry(20, 20, 15, 100, 1, true);
 
-        //var texture = loader.load(process.env.PUBLIC_URL + 'resource/pano-demo.png', undefined, undefined, err => {
-            //console.error(err)
-        //});
+        var loadTexture = (fname) => {
+            
+            texture = loader.load(process.env.PUBLIC_URL + 'resource/'+fname, ()=>{this.isUpdating=false}, undefined, err => {
+                console.error(err)
+            });
+            //texture.needsUpdate = true;
+            
+            cylindermaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+            cylindermesh = new THREE.Mesh(cylindergeometry, cylindermaterial);
+            cylindergeometry.scale(-1, 1, 1);
+            cylindermesh.position.y = 2
+            cylindermesh.rotation.y = this.calibration
+            scene.add(cylindermesh);
+        }
+        loadTexture(this.state.filename);
 
-        var plane = new THREE.BoxBufferGeometry(1, 1, 1);
-        var material1 = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
-        var mesh = new THREE.Mesh(plane, material1);
+        var updateTexture = () => {
+            texture = loader.load(process.env.PUBLIC_URL + 'resource/pano-20190724143833-mx.png', fLoad, undefined, err => {
+                console.error(err)
+            });
+            //texture.needsUpdate = true;
+            function fLoad() {
+                camZoom();
+            }
+            
+        }
 
-        var geometry = new THREE.CylinderBufferGeometry(20, 20, 15, 100, 1, true);
-        var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
-        var tubeMesh = new THREE.Mesh(geometry, material);
-        //scene.add(mesh);
-        scene.add(tubeMesh);
+        var line1 = new THREE.LineBasicMaterial( { color: "black" } );
+        var geometry1 = new THREE.Geometry();
+        geometry1.vertices.push(new THREE.Vector3( 0, -5, 0) );
+        geometry1.vertices.push(new THREE.Vector3( 0, -5, -20) );
+        var line2 = new THREE.LineBasicMaterial( { color: "red" } );
+        var geometry2 = new THREE.Geometry();
+        geometry2.vertices.push(new THREE.Vector3( 0, -5, 0) );
+        geometry2.vertices.push(new THREE.Vector3( 0, -5, 20) );
+        var southline = new THREE.Line( geometry1, line1 );
+        var northline = new THREE.Line( geometry2, line2 );
+        
+        scene.add( northline );
+        scene.add( southline) 
+
+        useRender(() => {
+            TWEEN.update();
+            
+        })
 
         return (
-            <group></group>
+            <>
+            <perspectiveCamera
+                    ref={mainCam}
+                    fov={45}
+                    aspect={window.innerWidth / window.innerHeight}
+                    onUpdate={self => self.updateProjectionMatrix()}
+            />
+                <group>
+                    <mesh onClick={updateTexture} position={[0, -5.6, 0]} rotation={[-1.571, 0, 0]}
+                        geometry={new THREE.CircleGeometry(20, 100, 0)}>
+                        <meshBasicMaterial attach="material" color="grey" />
+                    </mesh>
+                </group>
+            </>
         )
     }
     //TODO: change the pano window render size
     render() {
+        
         if(this.state.isLoading){
             console.log("Loading...")
             return <div><h3>Loading...</h3></div>
         }
         return (
             <div className="Pano-canvas">
-                <Canvas
-                    camera={new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000)}
-                >
-                    <this.PanoMain />
+                <Canvas>
+                    <this.RenderPano/>
                 </Canvas>
             </div>
         )

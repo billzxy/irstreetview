@@ -13,7 +13,8 @@ const Pano = new Schema(
         id: { type: String, required: true },
         filename: {type: String, required: true},
         coord: { type: coord, required: true },
-        azimuth: { type: [], required: true },
+        azimuth: { type: [], required: false },
+        calibration: {type: Number, required: false}
     },
     { timestamps: true },
 )

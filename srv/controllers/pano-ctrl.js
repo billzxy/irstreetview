@@ -122,6 +122,57 @@ getAllPanosIdAndCoords = async (req, res) => {
     }).catch(err => console.log(err))
 }
 
+getPanoAllAttrById = async (req, res) => {
+    await Pano.findOne({ id: req.params.id }, (err, pano) => {
+        if (err) {
+            return res.status(400).json({ success: false, error: err })
+        }
+
+        if (!pano) {
+            return res
+                .status(404)
+                .json({ success: false, error: `Pano not found` })
+        }
+        return res.status(200).json({success: true, data: {filename: pano.filename ,coord: pano.coord, calibration: pano.calibration} })
+    }).catch(err => console.log(err))
+}
+
+updatePanoCalibration = async (req, res) => {
+    const body = req.body
+    if (!body) {
+        return res.status(400).json({
+            success: false,
+            error: 'You must provide a body to update',
+        })
+    }
+    Pano.findOne({ id: req.params.id }, (err, pano) => {
+        if (err) {
+            return res.status(404).json({
+                err,
+                message: 'Pano not found!',
+            })
+        }
+        pano.azimuth = []
+        pano.calibration = body.calibration
+        
+        pano
+            .save()
+            .then(() => {
+                return res.status(200).json({
+                    success: true,
+                    id: pano.id,
+                    message: 'Calibration updated!',
+                })
+            })
+            .catch(error => {
+                return res.status(404).json({
+                    error,
+                    message: 'Calibration not updated!',
+                })
+            })
+    })
+}
+
 module.exports = {
     createPano,
     deletePano,
@@ -129,5 +180,7 @@ module.exports = {
     getPanoCoordById,
     getPanoFileNameById,
     getPanoById,
-    getAllPanosIdAndCoords
+    getAllPanosIdAndCoords,
+    getPanoAllAttrById,
+    updatePanoCalibration
 }

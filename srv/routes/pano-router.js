@@ -10,5 +10,7 @@ router.get('/panos/all', PanoCtrl.getPanos)
 router.get('/pano/coord/:id', PanoCtrl.getPanoCoordById)
 router.get('/pano/fname/:id', PanoCtrl.getPanoFileNameById)
 router.get('/panos/inc', PanoCtrl.getPanos)
+router.get('/pano/allAttr/:id', PanoCtrl.getPanoAllAttrById)
+router.put('/pano/cal/:id',PanoCtrl.updatePanoCalibration)
 
 module.exports = router

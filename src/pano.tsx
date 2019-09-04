@@ -19,22 +19,23 @@ class Pano extends Component<PanoProps, PanoState> {
             isLoading: true,
             filename: undefined
         }
-        this.getPanoFilename(this.props.lid);
+        this.getPanoAttributes(this.props.lid);
         this.RenderPano = this.RenderPano.bind(this);
         //this.RenderComposite = this.RenderComposite.bind(this);
     }
 
-    getPanoFilename = async (id) => {
+    getPanoAttributes= async (id) => {
         this.setState({ isLoading: true })
-        await api.getPanoFileNameById(id).then(result =>{
-            //console.log(result.data.filename);
+        await api.getPanoAllAttrById(id).then(result =>{
+            console.log(result.data.data.filename);
             this.setState({
-                filename: result.data.filename,
+                filename: result.data.data.filename,
                 isLoading: false
             })
+            this.calibration = result.data.data.calibration
         })
     }
-    
+    calibration = undefined
     boxRef = React.createRef();
     isUpdating = false;
     //fname = this.state.filename;
@@ -51,7 +52,6 @@ class Pano extends Component<PanoProps, PanoState> {
         gl.setSize(window.innerWidth, window.innerHeight)
         camera.position.set(0,0,0)
         camera.lookAt(0,0,0)
-        camera.rotation.y = direction;
         
         var mouseDown = false,
             mouseX = 0,
@@ -87,7 +87,7 @@ class Pano extends Component<PanoProps, PanoState> {
         function rotateScene(deltaX, deltaY) {
             camera.rotation.y += deltaX / 500;
             //camera.rotation.x += deltaY / 500;
-            //console.log(camera.rotation.y);
+            console.log(camera.rotation.y);
         }
         
         var cylindergeometry = undefined;
@@ -128,7 +128,7 @@ class Pano extends Component<PanoProps, PanoState> {
                 cylindermesh = new THREE.Mesh(cylindergeometry, cylindermaterial);
                 cylindermesh.position.y = 2
                 scene.add(cylindermesh);
-                camera.rotation.y = direction;
+                //camera.rotation.y = direction;
                 //this.setState({filename:"pano-20190724143833-mx.png"});
                 
             ;});
@@ -181,6 +181,7 @@ class Pano extends Component<PanoProps, PanoState> {
         cylindergeometry = new THREE.CylinderBufferGeometry(20, 20, 15, 100, 1, true);
 
         var loadTexture = (fname) => {
+            
             texture = loader.load(process.env.PUBLIC_URL + 'resource/'+fname, ()=>{this.isUpdating=false}, undefined, err => {
                 console.error(err)
             });
@@ -190,6 +191,7 @@ class Pano extends Component<PanoProps, PanoState> {
             cylindermesh = new THREE.Mesh(cylindergeometry, cylindermaterial);
             cylindergeometry.scale(-1, 1, 1);
             cylindermesh.position.y = 2
+            cylindermesh.rotation.y = this.calibration
             scene.add(cylindermesh);
         }
         loadTexture(this.state.filename);
@@ -204,11 +206,24 @@ class Pano extends Component<PanoProps, PanoState> {
             }
             
         }
+
+        var line1 = new THREE.LineBasicMaterial( { color: "black" } );
+        var geometry1 = new THREE.Geometry();
+        geometry1.vertices.push(new THREE.Vector3( 0, -5, 0) );
+        geometry1.vertices.push(new THREE.Vector3( 0, -5, -20) );
+        var line2 = new THREE.LineBasicMaterial( { color: "red" } );
+        var geometry2 = new THREE.Geometry();
+        geometry2.vertices.push(new THREE.Vector3( 0, -5, 0) );
+        geometry2.vertices.push(new THREE.Vector3( 0, -5, 20) );
+        var southline = new THREE.Line( geometry1, line1 );
+        var northline = new THREE.Line( geometry2, line2 );
         
+        scene.add( northline );
+        scene.add( southline) 
 
         useRender(() => {
             TWEEN.update();
-            //console.log((camera as any).fov);
+            
         })
 
         return (
@@ -219,16 +234,12 @@ class Pano extends Component<PanoProps, PanoState> {
                     aspect={window.innerWidth / window.innerHeight}
                     onUpdate={self => self.updateProjectionMatrix()}
             />
-            <group>
-            {/*<mesh onClick={camZoom} position={[0,0,-5]}>
-                <boxGeometry attach="geometry" ref={this.boxRef} />
-                <meshBasicMaterial attach="material" color="white" />
-            </mesh>*/}
-            <mesh onClick={updateTexture} position={[0,-5.6,0]} rotation={[-1.571,0,0]} 
-                geometry={new THREE.CircleGeometry(20, 100, 0)}>
-                <meshBasicMaterial attach="material" color="grey" />
-            </mesh> 
-            </group>
+                <group>
+                    <mesh onClick={updateTexture} position={[0, -5.6, 0]} rotation={[-1.571, 0, 0]}
+                        geometry={new THREE.CircleGeometry(20, 100, 0)}>
+                        <meshBasicMaterial attach="material" color="grey" />
+                    </mesh>
+                </group>
             </>
         )
     }

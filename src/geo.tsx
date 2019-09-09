@@ -1,16 +1,7 @@
 import * as geolib from 'geolib'
 import api from './api/index'
+import { async } from 'q';
 
-
-type LocationType = {
-    coord: { 
-        lat: number,
-        lng: number
-    },
-    calibration: number,
-    id: string,
-    fname: string
-}
 
 class Location{
     //Members
@@ -29,14 +20,10 @@ class Location{
 
     setAllAttr = async()=>{
         await api.getPanoAllAttrById(this.id).then(result =>{
-            //console.log(result.data.data.filename);
-            this.fname = result.data.data.filename;
-            this.calibration = result.data.data.calibration;
-            let lat = result.data.data.coord.lat
-            this.coord.lat = lat;
-            //console.log(result.data.data.coord.lat);
+            this.fname = result.data.data.filename; 
+            this.coord.lat = result.data.data.coord.lat;
             this.coord.lng = result.data.data.coord.lng;
-            this.calibration = result.data.data.calibration
+            this.calibration = result.data.data.calibration;
         })
     }
 
@@ -57,9 +44,4 @@ class Location{
     }
 }
 
-class Neighbors{
-    locations: Location[]
-
-}
-
-export {Neighbors, Location}
+export {Location}

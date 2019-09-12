@@ -23,7 +23,7 @@ export class Interface extends React.Component{
       <Link to="/maps">Click to see panorama locations on maps</Link>
       <Link to="/viewPano">View Pano</Link>
       <Route path="/maps" component={GMap} />
-      <Route path="/viewPano" render={()=>{ReactDOM.render(<Pano lid={"20190724143458"} />, document.getElementById('panoWindow'))}} />
+      <Route path="/viewPano" render={()=>{ReactDOM.render(<Pano lid={"20190724151553"} />, document.getElementById('panoWindow'))}} />
     </Router>
     </div>;
 

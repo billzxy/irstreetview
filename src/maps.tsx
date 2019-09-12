@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import ReactDOM from "react-dom"
 import { Map, GoogleApiWrapper, Marker } from 'google-maps-react';
 import Pano from './pano'
+import api from './api/index'
 
 
 const mapStyles = {
@@ -17,10 +18,23 @@ class MapContainer extends Component {
         super(props);
         //TODO: Make the coordinates dynamically acquired 
         this.state = {
-            coords: [{id: "20190724143833", lat: 42.36000888, lng: -71.05416259},
-                  {id: "20190724143458",lat: 42.36000896, lng: -71.05425626}],
-            showComp: true
+            showComp: false
         }
+        var getAllPanoCoords = async () => {
+            await api.getAllPanoIdAndCoord().then(result =>{
+                var coordArr = [];
+                let data = result.data.data;
+                for(var i = 0; i < data.length; i++){
+                    coordArr.push( {id: data[i].id, lat: data[i].coord.lat, lng: data[i].coord.lng} );
+                }
+                //console.log(data);
+                this.setState( {
+                    coords: coordArr,
+                    showComp: true
+                })
+            })
+        }
+        getAllPanoCoords();
     }
 
     showComponent(i){
@@ -37,6 +51,8 @@ class MapContainer extends Component {
     }
 
     addMarkers(){
+        this.setBounds();
+
         return (this.state as any).coords.map((coord, index) => {
             return <Marker lid={coord.id}position={{
              lat: coord.lat,

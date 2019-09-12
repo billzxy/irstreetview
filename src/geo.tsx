@@ -1,6 +1,5 @@
 import * as geolib from 'geolib'
 import api from './api/index'
-import { async } from 'q';
 
 
 class Location{

@@ -37,7 +37,7 @@ class Pano extends Component<PanoProps, PanoState> {
             
             //setNeighbors
             this.neighbors = new Map();
-            await this.setNeighbors();
+            //await this.setNeighbors();
             this.setState({isLoading:false})
         }
         setCurrLocAndNeighbors();
@@ -69,22 +69,7 @@ class Pano extends Component<PanoProps, PanoState> {
             bearing: this.currLoc.getBearingTo(n)
         })
     }
-    /*
-    getPanoAttributes= async (id) => {
-        this.setState({ isLoading: true })
-        await api.getPanoAllAttrById(id).then(result =>{
-            console.log(result.data.data.filename);
-            this.setState({
-                filename: result.data.data.filename,
-                isLoading: false
-            })
-            this.calibration = result.data.data.calibration
-        })
-    }*/
-    //calibration = undefined
-    //boxRef = React.createRef();
-    //isUpdating = false;
-    //fname = this.state.filename;
+    
     cylindergeometry = new THREE.CylinderBufferGeometry(20, 20, 15, 100, 1, true);
     cylindermaterial = undefined;
     cylindermesh = undefined;
@@ -96,15 +81,12 @@ class Pano extends Component<PanoProps, PanoState> {
         this.texture = this.loader.load(process.env.PUBLIC_URL + 'resource/'+this.currLoc.fname, undefined, undefined, err => {
             console.error(err)
         });
-        //texture.needsUpdate = true;
         
         this.cylindermaterial = new THREE.MeshBasicMaterial({ map: this.texture, side: THREE.DoubleSide });
         this.cylindermesh = new THREE.Mesh(this.cylindergeometry, this.cylindermaterial);
         this.cylindergeometry.scale(-1, 1, 1);
         this.cylindermesh.position.y = 1
-        //console.log(this.currLoc.calibration);
         this.cylindermesh.rotation.y = this.currLoc.calibration
-        //console.log("LoadTexture")
     }
 
     InitNeighborPins() {
@@ -114,7 +96,6 @@ class Pano extends Component<PanoProps, PanoState> {
         }
         this.neighbors.forEach((loc, id) => {
             let bearing = loc.bearing;
-            //let distance = loc.distance;
             let line = new THREE.LineBasicMaterial({ color: "blue" });
             let geometry = new THREE.Geometry();
             geometry.vertices.push(new THREE.Vector3(0, -5, 0));
@@ -124,7 +105,6 @@ class Pano extends Component<PanoProps, PanoState> {
     }
 
     RenderPano() {
-        //var direction = 2.54;
         var mainCam = useRef();
         var { gl, camera, canvas, scene } = useThree();
         (camera as any).fov = 40;
@@ -164,12 +144,12 @@ class Pano extends Component<PanoProps, PanoState> {
         canvas.addEventListener('mousedown', e => onMouseDown(e), false);
         canvas.addEventListener('mouseup', e => onMouseUp(e), false);
         function rotateScene(deltaX) {
+            console.log(camera.rotation.y)
             camera.rotation.y += deltaX / 500;
             camera.rotation.y %= (2 * Math.PI)
         }
 
         var camZoom = (id)=> {
-            //this.isUpdating=true;
             const depth = 15.5;
             const resFov = 75;
             const camAt = this.neighbors.get(id).bearing*Math.PI/180;
@@ -195,14 +175,14 @@ class Pano extends Component<PanoProps, PanoState> {
             var zoom = {
               zVal: (camera as any).position.z,
               xVal: (camera as any).position.x,
-              fovValue: (camera as any).fov // from current zoom (no matter if it's more or less than 1)
+              fovValue: (camera as any).fov 
             };
             var zoomEnd = {
               zVal: -depth *Math.cos(camAt),
               xVal: depth * Math.sin(camAt),
               fovValue: resFov
             };
-            var tweenZoom = new TWEEN.Tween(zoom).to(zoomEnd, 500); // duration of tweening is 0.5 second
+            var tweenZoom = new TWEEN.Tween(zoom).to(zoomEnd, 500); 
 
             tweenZoom.onUpdate(function() {
               (camera as any).position.z = zoom.zVal;
@@ -217,13 +197,16 @@ class Pano extends Component<PanoProps, PanoState> {
                 (camera as any).updateProjectionMatrix();
                 this.cylindermaterial.map = this.texture;
                 this.cylindermesh.rotation.y = this.currLoc.calibration
-                await this.setNeighbors().then(()=>{this.InitNeighborPins()});
+                //await this.setNeighbors();//.then(()=>{this.InitNeighborPins()});
             ;});
             tweenRot.chain(tweenZoom);
             tweenRot.start();
         }
         
+        let cone = new Arrow();
+
         scene.add(this.cylindermesh);
+        scene.add(cone.mesh);
 
         var updateTexture = async () => {
             //TODO: Implement parameter passing
@@ -242,7 +225,7 @@ class Pano extends Component<PanoProps, PanoState> {
                 console.error(err)
             });
         }
-        this.InitNeighborPins();
+        //this.InitNeighborPins();
         var line1 = new THREE.LineBasicMaterial( { color: "black" } );
         var geometry1 = new THREE.Geometry();
         geometry1.vertices.push(new THREE.Vector3( 0, -5, 0) );
@@ -256,10 +239,11 @@ class Pano extends Component<PanoProps, PanoState> {
         
         scene.add( northline );
         scene.add( southline );
-        scene.add(this.lines[0]);
+        //scene.add(this.lines[0]);
         
         useRender(() => {
             TWEEN.update();
+            cone.mesh.position.set(-13*Math.sin(camera.rotation.y),-2,-13*Math.cos(camera.rotation.y));
         })
 
         return (

@@ -146,7 +146,7 @@ class Pano extends Component<PanoProps, PanoState> {
             mouseX = evt.clientX;
             mouseY = evt.clientY;
 
-            rotateScene(deltaX, deltaY);
+            rotateScene(deltaX);
         }
 
         function onMouseDown(evt) {
@@ -163,10 +163,9 @@ class Pano extends Component<PanoProps, PanoState> {
         canvas.addEventListener('mousemove', e => onMouseMove(e), false);
         canvas.addEventListener('mousedown', e => onMouseDown(e), false);
         canvas.addEventListener('mouseup', e => onMouseUp(e), false);
-        function rotateScene(deltaX, deltaY) {
+        function rotateScene(deltaX) {
             camera.rotation.y += deltaX / 500;
-            //camera.rotation.x += deltaY / 500;
-            //console.log(camera.rotation.y);
+            camera.rotation.y %= (2 * Math.PI)
         }
 
         var camZoom = (id)=> {
@@ -174,17 +173,22 @@ class Pano extends Component<PanoProps, PanoState> {
             const depth = 15.5;
             const resFov = 75;
             const camAt = this.neighbors.get(id).bearing*Math.PI/180;
+            var endAt=-(this.neighbors.get(id).bearing)*Math.PI/180;
+            if(camera.rotation.y>0){
+                endAt=2*Math.PI-(this.neighbors.get(id).bearing)*Math.PI/180;
+            }
             var rotBegin = {
                 at:(camera as any).rotation.y
             }
             var rotEnd = {
-                at:-(this.neighbors.get(id).bearing)*Math.PI/180
+                at:endAt
             }
             var tweenRot = new TWEEN.Tween(rotBegin).to(rotEnd, 500).easing(TWEEN.Easing.Quadratic.InOut);
             tweenRot.onUpdate(function(){
                 (camera as any).rotation.y = rotBegin.at;
             });
             tweenRot.onComplete(()=>{
+                
                 camera.rotation.y = -(this.neighbors.get(id).bearing)*Math.PI/180
             })
             

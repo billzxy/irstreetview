@@ -3,8 +3,7 @@ import * as THREE from "three";
 import { Canvas, useThree, useRender } from 'react-three-fiber'
 import './style/pano.css'
 import { Location } from './geo'
-import {Arrow, Cylinder} from './shapes' 
-//import { EffectComposer } from './postprocessing/EffectComposer'
+import {Arrow, Cylinder} from './shapes'
 
 const TWEEN = require('@tweenjs/tween.js');
 
@@ -37,7 +36,6 @@ class Pano extends Component<PanoProps, PanoState> {
             
             //setNeighbors
             this.neighbors = new Map();
-            //await this.setNeighbors();
             this.setState({isLoading:false})
         }
         setCurrLocAndNeighbors();
@@ -85,7 +83,7 @@ class Pano extends Component<PanoProps, PanoState> {
         this.cylindermaterial = new THREE.MeshBasicMaterial({ map: this.texture, side: THREE.DoubleSide });
         this.cylindermesh = new THREE.Mesh(this.cylindergeometry, this.cylindermaterial);
         this.cylindergeometry.scale(-1, 1, 1);
-        this.cylindermesh.position.y = 1
+        //this.cylindermesh.position.y = 0
         this.cylindermesh.rotation.y = this.currLoc.calibration
     }
 
@@ -144,8 +142,8 @@ class Pano extends Component<PanoProps, PanoState> {
         canvas.addEventListener('mousedown', e => onMouseDown(e), false);
         canvas.addEventListener('mouseup', e => onMouseUp(e), false);
         function rotateScene(deltaX) {
-            console.log(camera.rotation.y)
-            camera.rotation.y += deltaX / 500;
+            //console.log(camera.rotation.y);
+            camera.rotation.y += deltaX / 1000;
             camera.rotation.y %= (2 * Math.PI)
         }
 
@@ -196,18 +194,15 @@ class Pano extends Component<PanoProps, PanoState> {
                 (camera as any).fov = 40;
                 (camera as any).updateProjectionMatrix();
                 this.cylindermaterial.map = this.texture;
-                this.cylindermesh.rotation.y = this.currLoc.calibration
+                //this.cylindermesh.rotation.y = this.currLoc.calibration
                 //await this.setNeighbors();//.then(()=>{this.InitNeighborPins()});
             ;});
             tweenRot.chain(tweenZoom);
             tweenRot.start();
         }
         
-        let cone = new Arrow();
-
         scene.add(this.cylindermesh);
-        scene.add(cone.mesh);
-
+        
         var updateTexture = async () => {
             //TODO: Implement parameter passing
             var id = "";
@@ -226,6 +221,7 @@ class Pano extends Component<PanoProps, PanoState> {
             });
         }
         //this.InitNeighborPins();
+        /*
         var line1 = new THREE.LineBasicMaterial( { color: "black" } );
         var geometry1 = new THREE.Geometry();
         geometry1.vertices.push(new THREE.Vector3( 0, -5, 0) );
@@ -240,10 +236,12 @@ class Pano extends Component<PanoProps, PanoState> {
         scene.add( northline );
         scene.add( southline );
         //scene.add(this.lines[0]);
-        
+        */
+        let cone = new Arrow();
+        var conemesh = useRef();
         useRender(() => {
             TWEEN.update();
-            cone.mesh.position.set(-13*Math.sin(camera.rotation.y),-2,-13*Math.cos(camera.rotation.y));
+            (conemesh.current as any).position.set(-13*Math.sin(camera.rotation.y),-2,-13*Math.cos(camera.rotation.y));
         })
 
         return (
@@ -255,9 +253,15 @@ class Pano extends Component<PanoProps, PanoState> {
                     onUpdate={self => self.updateProjectionMatrix()}
             />
                 <group>
-                    <mesh onClick={updateTexture} position={[0, -6.6, 0]} rotation={[-1.571, 0, 0]}
+                    {/*<mesh onClick={updateTexture} position={[0, -6.6, 0]} rotation={[-1.571, 0, 0]}
                         geometry={new THREE.CircleGeometry(20, 100, 0)}>
                         <meshBasicMaterial attach="material" color="grey" />
+        </mesh>*/}
+                    <mesh onClick={()=>{this.currLoc.updateCalibration(camera)}}
+                        ref={conemesh}
+                        geometry={cone.geometry}
+                        >
+                            <meshBasicMaterial attach="material" color="white" />
                     </mesh>
                 </group>
             </>

@@ -2,6 +2,7 @@
 
 #api keys
 .env
+.env.development
 
 # dependencies
 /node_modules

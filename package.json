@@ -4,10 +4,6 @@
 	"private": true,
 	"dependencies": {
 		"@tweenjs/tween.js": "^17.4.0",
-		"@types/jest": "^24.0.16",
-		"@types/node": "^12.6.8",
-		"@types/react": "^16.8.23",
-		"@types/react-dom": "^16.8.5",
 		"axios": "^0.19.0",
 		"body-parser": "^1.19.0",
 		"cors": "^2.8.5",
@@ -23,6 +19,7 @@
 		"react-router-dom": "^5.0.1",
 		"react-scripts": "3.0.1",
 		"react-three-fiber": "^2.2.14",
+		"styled-components": "^4.3.2",
 		"three": "^0.107.0",
 		"tween": "^0.9.0",
 		"typescript": "^3.5.3"
@@ -51,6 +48,12 @@
 	},
 	"proxy": "http://localhost:8080",
 	"devDependencies": {
+		"@types/jest": "^24.0.16",
+		"@types/node": "^12.6.8",
+		"@types/react": "^16.8.23",
+		"@types/react-dom": "^16.8.5",
+		"@types/react-router": "^5.0.5",
+		"@types/react-router-dom": "^4.3.5",
 		"nodemon": "^1.19.2"
 	},
 	"nodemonConfig": {

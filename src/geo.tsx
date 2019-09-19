@@ -41,6 +41,15 @@ class Location{
     getBearingToNeighbors(neighbor: Location[]){
         return neighbor.map(this.getBearingTo);
     }
+
+    updateCalibration = async (camera) => {
+        const payload = {
+            "calibration":-camera.rotation.y
+        }
+        await api.updateCalibrationById(this.id,payload).then(res=>{
+            alert(res);
+        })
+    }
 }
 
 export {Location}

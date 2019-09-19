@@ -17,7 +17,7 @@ export const getPanoFileNameById = id => api.get(`/pano/fname/${id}`)
 export const getPanoCoordById = id => api.get(`/pano/coord/${id}`)
 export const getAllPanoIdAndCoord = () => api.get(`/panos/inc`)
 export const getPanoAllAttrById = id => api.get(`/pano/allAttr/${id}`)
-export const updateMovieById = (id, payload) => api.put(`/pano/cal/${id}`, payload)
+export const updateCalibrationById = (id, payload) => api.put(`/pano/cal/${id}`, payload)
 
 
 const apis = {
@@ -30,7 +30,7 @@ const apis = {
     getPanoCoordById,
     getAllPanoIdAndCoord,
     getPanoAllAttrById,
-    updateMovieById
+    updateCalibrationById
 }
 
 export default apis

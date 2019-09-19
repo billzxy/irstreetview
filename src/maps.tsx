@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, useRef } from "react";
 import ReactDOM from "react-dom"
 import { Map, GoogleApiWrapper, Marker } from 'google-maps-react';
 import Pano from './pano'
@@ -11,12 +11,9 @@ const mapStyles = {
 };
 
 class MapContainer extends Component {
-    //ett = {"latitude":42.36000888,"longitude":-71.05416259}
-    //ffe = {"latitude":42.36000896,"longitude":-71.05425626}
 
     constructor(props) {
         super(props);
-        //TODO: Make the coordinates dynamically acquired 
         this.state = {
             showComp: false
         }
@@ -46,20 +43,22 @@ class MapContainer extends Component {
 
     setBounds(){
         for (var i = 0; i < (this.state as any).coords.length; i++) {
-            this.bounds.extend((this.state as any).coords[i]);
+            let coord = (this.state as any).coords[i];
+            this.bounds.extend(new (this.props as any).google.maps.LatLng({lat: coord.lat, lng: coord.lng}));
         }
     }
 
     addMarkers(){
         this.setBounds();
-
+        
+        //let map = new Map(this.refs.map,);
+        //(this.props as any).google.maps.fitBounds(this.bounds);
         return (this.state as any).coords.map((coord, index) => {
             return <Marker lid={coord.id}position={{
              lat: coord.lat,
              lng: coord.lng
            }}
            onClick={(e) => {
-               //console.log("Click");
                this.showComponent(false);
                return this.gotoPano(e.lid);
                 
@@ -75,11 +74,12 @@ class MapContainer extends Component {
     render() {
         return (this.state as any).showComp ? (
             <Map
-              google={(this.props as any ).google} //TODO: fix this TS/JS problem
-              zoom={18}
-              style={mapStyles}
-              initialCenter={{ lat: 42.36, lng: -71.054}}
-              bounds={this.bounds}
+                ref={(this.props as any).onMapMounted}
+                google={(this.props as any).google}
+                zoom={18}
+                style={mapStyles}
+                initialCenter={{ lat: 42.36, lng: -71.054}}
+                bounds={this.bounds}
             >
                 {this.addMarkers()}
             </Map>

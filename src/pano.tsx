@@ -34,6 +34,11 @@ class Pano extends Component<PanoProps, PanoState> {
         this.RenderPano = this.RenderPano.bind(this);
     }
 
+    get panoId() {
+        // @ts-ignore
+        return this.props.match.params.id
+    }
+
     componentDidMount() {
         var setCurrLocAndNeighbors = async () => {
             //setCurrLoc
@@ -44,33 +49,22 @@ class Pano extends Component<PanoProps, PanoState> {
 
             //setNeighbors
             this.neighbors = new Map();
+            //this.setNeighbors()
             this.setState({ isLoading: false })
         }
         setCurrLocAndNeighbors();
     }
 
-    async setNeighbors() {//Hardcoded function to test out two panos
+    async setNeighbors() {//Only supports two neighbors for now
         this.neighbors.clear();//Purge previous neighbors
         var next;
         console.log(this.currLoc.id)
-        switch (this.currLoc.id) {
-            case "20190724143833":
-                next = new Location("20190724143458");
-                break;
-            case "20190724143458":
-                next = new Location("20190724143833");
-                break;
-        }
+        
         await next.setAllAttr().then(() => {
             this.addNeighbor(next);
         });
     }
-
-    get panoId() {
-        // @ts-ignore
-        return this.props.match.params.id
-    }
-
+    
     addNeighbor(n: Location) {
         this.neighbors.set(n.id, {
             location: n,
@@ -296,11 +290,18 @@ class Pano extends Component<PanoProps, PanoState> {
 
         let cone = new Arrow();
         var conemesh = useRef();
+        var conemesh1 = useRef();
+        if(conemesh.current&&conemesh1.current){
+            (conemesh.current as any).position.z = -1;
+            (conemesh1.current as any).position.z = 1;
+            (conemesh.current as any).rotation.x = -1.5708;
+            (conemesh1.current as any).rotation.x = 1.5708;
+        }
         var coneGroup = useRef();
 
         useRender(() => {
             TWEEN.update();
-            (coneGroup.current as any).position.set(-13 * Math.sin(camera.rotation.y), -2, -13 * Math.cos(camera.rotation.y));
+            (coneGroup.current as any).position.set(-13 * Math.sin(camera.rotation.y), -4, -13 * Math.cos(camera.rotation.y));
             (compassGroup.current as any).position.set(-13 * Math.sin(camera.rotation.y), 4, -13 * Math.cos(camera.rotation.y))
         })
 
@@ -316,12 +317,18 @@ class Pano extends Component<PanoProps, PanoState> {
                     {/*<mesh onClick={updateTexture} position={[0, -6.6, 0]} rotation={[-1.571, 0, 0]}
                         geometry={new THREE.CircleGeometry(20, 100, 0)}>
                         <meshBasicMaterial attach="material" color="grey" />
-        </mesh>*/}
+                    </mesh>*/}
                     <mesh onClick={() => { this.CameraLookNorth(camera);/*this.currLoc.updateCalibration(camera)*/ }}
                         ref={conemesh}
                         geometry={cone.geometry}
                     >
-                        <meshBasicMaterial attach="material" color="white" />
+                        <meshBasicMaterial attach="material" color="red" opacity={1}/>
+                    </mesh>
+                    <mesh onClick={e => {}}
+                        ref={conemesh1}
+                        geometry={cone.geometry}
+                    >
+                        <meshBasicMaterial attach="material" color="grey" opacity={0.5}/>
                     </mesh>
                 </group>
                 <group onClick={() => this.CameraLookNorth(camera)}

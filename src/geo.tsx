@@ -11,6 +11,7 @@ class Location{
     calibration: number = 0.0;
     id: string;
     fname: string = "";
+    neighborhood: string = "";
 
     //Methods
     constructor(id: string){
@@ -23,7 +24,12 @@ class Location{
             this.coord.lat = result.data.data.coord.lat;
             this.coord.lng = result.data.data.coord.lng;
             this.calibration = result.data.data.calibration;
+            this.neighborhood = result.data.data.neightborhood;
         })
+    }
+
+    getNeighborIds(){
+        
     }
 
     getDistanceTo(loc: Location){

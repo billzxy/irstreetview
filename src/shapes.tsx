@@ -31,7 +31,7 @@ class Arrow{
     id: string
 
     constructor(){
-        this.geometry = new THREE.ConeBufferGeometry(1,1,16);
+        this.geometry = new THREE.ConeBufferGeometry(0.2,1,16);
         this.material = new THREE.MeshBasicMaterial({color:"white"})
         this.mesh = new THREE.Mesh(this.geometry,this.material);
     }

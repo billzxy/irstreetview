@@ -1,52 +1,66 @@
 {
-  "name": "smartir",
-  "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "@tweenjs/tween.js": "^17.4.0",
-    "@types/jest": "^24.0.16",
-    "@types/node": "^12.6.8",
-    "@types/react": "^16.8.23",
-    "@types/react-dom": "^16.8.5",
-    "axios": "^0.19.0",
-    "body-parser": "^1.19.0",
-    "cors": "^2.8.5",
-    "express": "^4.17.1",
-    "geolib": "^3.0.4",
-    "google-maps-react": "^2.0.2",
-    "mongodb": "^3.3.1",
-    "mongoose": "^5.6.11",
-    "nodemon": "^1.19.1",
-    "path": "^0.12.7",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
-    "react-router-dom": "^5.0.1",
-    "react-scripts": "3.0.1",
-    "react-three-fiber": "^2.2.14",
-    "three": "^0.107.0",
-    "tween": "^0.9.0",
-    "typescript": "^3.5.3"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
-  "proxy": "http://localhost:8080"
+	"name": "smartir",
+	"version": "0.1.0",
+	"private": true,
+	"dependencies": {
+		"@tweenjs/tween.js": "^17.4.0",
+		"axios": "^0.19.0",
+		"body-parser": "^1.19.0",
+		"cors": "^2.8.5",
+		"express": "^4.17.1",
+		"geolib": "^3.0.4",
+		"google-maps-react": "^2.0.2",
+		"mongodb": "^3.3.1",
+		"mongoose": "^5.6.11",
+		"morgan": "^1.9.1",
+		"path": "^0.12.7",
+		"react": "^16.8.6",
+		"react-dom": "^16.8.6",
+		"react-router-dom": "^5.0.1",
+		"react-scripts": "3.0.1",
+		"react-three-fiber": "^2.2.14",
+		"styled-components": "^4.3.2",
+		"three-svg-loader": "^0.2.4",
+		"tween": "^0.9.0",
+		"typescript": "^3.5.3"
+	},
+	"scripts": {
+		"start": "react-scripts start",
+		"start:server": "nodemon srv/index.js",
+		"build": "react-scripts build",
+		"test": "react-scripts test",
+		"eject": "react-scripts eject"
+	},
+	"eslintConfig": {
+		"extends": "react-app"
+	},
+	"browserslist": {
+		"production": [
+			">0.2%",
+			"not dead",
+			"not op_mini all"
+		],
+		"development": [
+			"last 1 chrome version",
+			"last 1 firefox version",
+			"last 1 safari version"
+		]
+	},
+	"proxy": "http://localhost:8080",
+	"devDependencies": {
+		"@types/jest": "^24.0.16",
+		"@types/node": "^12.6.8",
+		"@types/react": "^16.8.23",
+		"@types/react-dom": "^16.8.5",
+		"@types/react-router": "^5.0.5",
+		"@types/react-router-dom": "^4.3.5",
+		"nodemon": "^1.19.2",
+		"three": "^0.108.0"
+	},
+	"nodemonConfig": {
+		"ignore": [
+			"src/*"
+		],
+		"delay": "2500"
+	}
 }

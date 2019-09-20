@@ -1,8 +1,9 @@
 import axios from 'axios'
+import mockedPanos from '../mocks/panos.json'
 
 const hostname = "localhost";
 const port = "8080";
-const url = 'http://'+hostname+':'+port+'/api';
+const url = 'http://' + hostname + ':' + port + '/api';
 
 const api = axios.create({
     baseURL: url,
@@ -15,7 +16,8 @@ export const getPanoById = id => api.get(`/pano/${id}`)
 
 export const getPanoFileNameById = id => api.get(`/pano/fname/${id}`)
 export const getPanoCoordById = id => api.get(`/pano/coord/${id}`)
-export const getAllPanoIdAndCoord = () => api.get(`/panos/inc`)
+// Should use superagent to mock when we have time
+export const getAllPanoIdAndCoord = () => Promise.resolve({ data: { data: mockedPanos } })
 export const getPanoAllAttrById = id => api.get(`/pano/allAttr/${id}`)
 export const updateCalibrationById = (id, payload) => api.put(`/pano/cal/${id}`, payload)
 

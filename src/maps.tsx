@@ -87,6 +87,7 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
     }
     //TODO: make a pano go back to map feature
     gotoPano(id) {
+        // @ts-ignore
         this.props.history.push(`/viewPano/${id}`)
     }
 

@@ -38,6 +38,7 @@ class Pano extends Component<PanoProps, PanoState> {
             //setCurrLoc
             this.currLoc = new Location(this.panoId);
             await this.currLoc.setAllAttr().then(() => {
+                console.log(this.currLoc)
                 this.loadTexture();
             });
 
@@ -66,6 +67,7 @@ class Pano extends Component<PanoProps, PanoState> {
     }
 
     get panoId() {
+        // @ts-ignore
         return this.props.match.params.id
     }
 
@@ -86,6 +88,7 @@ class Pano extends Component<PanoProps, PanoState> {
 
     loadTexture() {
         this.texture = this.loader.load(process.env.PUBLIC_URL + 'resource/' + this.currLoc.fname, undefined, undefined, err => {
+            console.log(process.env.PUBLIC_URL+"reee");
             console.error(err)
         });
 

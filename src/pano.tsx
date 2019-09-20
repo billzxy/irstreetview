@@ -229,7 +229,7 @@ class Pano extends Component<PanoProps, PanoState> {
         }
 
         scene.add(this.cylindermesh);
-        RenderCompass();
+        //RenderCompass();
 
         var updateTexture = async () => {
             //TODO: Implement parameter passing

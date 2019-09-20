@@ -2,6 +2,7 @@ import React, { Component, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useThree, useRender } from 'react-three-fiber'
 import { withRouter, RouteComponentProps } from 'react-router-dom'
+import SVGLoader from 'three-svg-loader'
 
 import './style/pano.css'
 import { Location } from './geo'
@@ -38,7 +39,6 @@ class Pano extends Component<PanoProps, PanoState> {
             //setCurrLoc
             this.currLoc = new Location(this.panoId);
             await this.currLoc.setAllAttr().then(() => {
-                console.log(this.currLoc)
                 this.loadTexture();
             });
 
@@ -88,7 +88,6 @@ class Pano extends Component<PanoProps, PanoState> {
 
     loadTexture() {
         this.texture = this.loader.load(process.env.PUBLIC_URL + 'resource/' + this.currLoc.fname, undefined, undefined, err => {
-            console.log(process.env.PUBLIC_URL+"reee");
             console.error(err)
         });
 
@@ -112,6 +111,23 @@ class Pano extends Component<PanoProps, PanoState> {
             geometry.vertices.push(new THREE.Vector3(20 * Math.sin(bearing * Math.PI / 180), -5, -20 * Math.cos(bearing * Math.PI / 180)));
             this.lines.push(new THREE.Line(geometry, line));
         })
+    }
+
+    CameraLookNorth(camera){
+        var rotBegin = {
+            at: camera.rotation.y
+        }
+        var rotEnd = {
+            at: 0
+        }
+        var tweenRot = new TWEEN.Tween(rotBegin).to(rotEnd, 750).easing(TWEEN.Easing.Quadratic.InOut);
+        tweenRot.onUpdate(function () {
+            camera.rotation.y = rotBegin.at;
+        });
+        tweenRot.onComplete(() => {
+            camera.rotation.y = 0;
+        })
+        tweenRot.start();
     }
 
     RenderPano() {
@@ -178,7 +194,6 @@ class Pano extends Component<PanoProps, PanoState> {
                 (camera as any).rotation.y = rotBegin.at;
             });
             tweenRot.onComplete(() => {
-
                 camera.rotation.y = -(this.neighbors.get(id).bearing) * Math.PI / 180
             })
 
@@ -208,13 +223,13 @@ class Pano extends Component<PanoProps, PanoState> {
                 this.cylindermaterial.map = this.texture;
                 //this.cylindermesh.rotation.y = this.currLoc.calibration
                 //await this.setNeighbors();//.then(()=>{this.InitNeighborPins()});
-                ;
             });
             tweenRot.chain(tweenZoom);
             tweenRot.start();
         }
 
         scene.add(this.cylindermesh);
+        RenderCompass();
 
         var updateTexture = async () => {
             //TODO: Implement parameter passing
@@ -250,11 +265,43 @@ class Pano extends Component<PanoProps, PanoState> {
         scene.add( southline );
         //scene.add(this.lines[0]);
         */
+        var compassGroup = useRef();
+        function RenderCompass(){
+            var loader = new SVGLoader();
+            loader.load(
+                process.env.PUBLIC_URL+'compass.svg',
+                function (data) {
+                    var paths = data.paths;
+                    for (var i = 0; i < paths.length; i++) {     
+                        var path = paths[i];
+                        var material = new THREE.MeshBasicMaterial({
+                            color: path.color,
+                            side: THREE.DoubleSide,
+                            depthWrite: false
+                        });
+                        var shapes = path.toShapes(true);
+                        for (var j = 0; j < shapes.length; j++) {
+                            var shape = shapes[j];
+                            var geometry = new THREE.ShapeBufferGeometry(shape);
+                            var mesh = new THREE.Mesh(geometry, material);
+                            (compassGroup.current as any).add(mesh);
+                        }
+                    }
+                    //console.log(compassGroup);
+                    (compassGroup.current as any).scale.set(13,13,13);
+                    scene.add(compassGroup.current);
+                }, undefined, function (error) {console.log('Error Loading Compass')}
+            );
+        }
+
         let cone = new Arrow();
         var conemesh = useRef();
+        var coneGroup = useRef();
+
         useRender(() => {
             TWEEN.update();
-            (conemesh.current as any).position.set(-13 * Math.sin(camera.rotation.y), -2, -13 * Math.cos(camera.rotation.y));
+            (coneGroup.current as any).position.set(-13 * Math.sin(camera.rotation.y), -2, -13 * Math.cos(camera.rotation.y));
+            (compassGroup.current as any).position.set(-13 * Math.sin(camera.rotation.y), 4, -13 * Math.cos(camera.rotation.y))
         })
 
         return (
@@ -265,17 +312,21 @@ class Pano extends Component<PanoProps, PanoState> {
                     aspect={window.innerWidth / window.innerHeight}
                     onUpdate={self => self.updateProjectionMatrix()}
                 />
-                <group>
+                <group ref={coneGroup}>
                     {/*<mesh onClick={updateTexture} position={[0, -6.6, 0]} rotation={[-1.571, 0, 0]}
                         geometry={new THREE.CircleGeometry(20, 100, 0)}>
                         <meshBasicMaterial attach="material" color="grey" />
         </mesh>*/}
-                    <mesh onClick={() => { this.currLoc.updateCalibration(camera) }}
+                    <mesh onClick={() => { this.CameraLookNorth(camera);/*this.currLoc.updateCalibration(camera)*/ }}
                         ref={conemesh}
                         geometry={cone.geometry}
                     >
                         <meshBasicMaterial attach="material" color="white" />
                     </mesh>
+                </group>
+                <group onClick={() => this.CameraLookNorth(camera)}
+                    ref={compassGroup}
+                >
                 </group>
             </>
         )

@@ -1,69 +1,106 @@
-import React, { Component } from "react";
+import React, { Component, useRef } from "react";
 import ReactDOM from "react-dom"
 import { Map, GoogleApiWrapper, Marker } from 'google-maps-react';
-import Pano from './pano'
+import { withRouter, RouteComponentProps } from 'react-router-dom';
 
+import api from './api/index'
 
 const mapStyles = {
     width: '60%',
     height: '60%',
+    position: 'relative'
 };
 
-class MapContainer extends Component {
-    //ett = {"latitude":42.36000888,"longitude":-71.05416259}
-    //ffe = {"latitude":42.36000896,"longitude":-71.05425626}
+export interface Coordinate {
+    id: string | number;
+    lat: number;
+    lng: number;
+}
+export interface MapContainerState {
+    showComp: boolean;
+    coords?: Coordinate[]
+}
+
+export interface MapContainerProps extends RouteComponentProps { }
+
+class MapContainer extends Component<MapContainerProps, MapContainerState> {
 
     constructor(props) {
         super(props);
-        //TODO: Make the coordinates dynamically acquired 
         this.state = {
-            coords: [{id: "20190724143833", lat: 42.36000888, lng: -71.05416259},
-                  {id: "20190724143458",lat: 42.36000896, lng: -71.05425626}],
-            showComp: true
+            showComp: false
         }
     }
 
-    showComponent(i){
-        if(i!==true&&i!==false) return;
-        this.setState({showComp:i});
+    componentDidMount() {
+        var getAllPanoCoords = async () => {
+            await api.getAllPanoIdAndCoord().then(result => {
+                var coordArr = [];
+                let data = result.data.data;
+                for (var i = 0; i < data.length; i++) {
+                    coordArr.push({ id: data[i].id, lat: data[i].coord.lat, lng: data[i].coord.lng });
+                }
+                //console.log(data);
+                this.setState({
+                    coords: coordArr,
+                    showComp: true
+                })
+            })
+        }
+        getAllPanoCoords();
+    }
+
+    showComponent(i) {
+        if (i !== true && i !== false) return;
+        this.setState({ showComp: i });
     }
 
     bounds = new (this.props as any).google.maps.LatLngBounds();
 
-    setBounds(){
+    setBounds() {
         for (var i = 0; i < (this.state as any).coords.length; i++) {
-            this.bounds.extend((this.state as any).coords[i]);
+            let coord = (this.state as any).coords[i];
+            this.bounds.extend(new (this.props as any).google.maps.LatLng({ lat: coord.lat, lng: coord.lng }));
         }
     }
 
-    addMarkers(){
+    addMarkers() {
+        this.setBounds();
+
+        //let map = new Map(this.refs.map,);
+        //(this.props as any).google.maps.fitBounds(this.bounds);
         return (this.state as any).coords.map((coord, index) => {
-            return <Marker lid={coord.id}position={{
-             lat: coord.lat,
-             lng: coord.lng
-           }}
-           onClick={(e) => {
-               //console.log("Click");
-               this.showComponent(false);
-               return this.gotoPano(e.lid);
-                
-            }} />
-          })
+            return <Marker
+                lid={coord.id}
+                position={{
+                    lat: coord.lat,
+                    lng: coord.lng
+                }}
+                onClick={(e) => {
+                    this.showComponent(false);
+                    return this.gotoPano(e.lid);
+
+                }}
+                key={coord.id}
+            />
+        })
     }
     //TODO: make a pano go back to map feature
-    gotoPano(id){
-        ReactDOM.render(<Pano lid={id} />, document.getElementById('panoWindow'));
+    gotoPano(id) {
+        // @ts-ignore
+        this.props.history.push(`/viewPano/${id}`)
     }
-    
 
     render() {
-        return (this.state as any).showComp ? (
+        const { showComp } = this.state
+        return showComp ? (
             <Map
-              google={(this.props as any ).google} //TODO: fix this TS/JS problem
-              zoom={18}
-              style={mapStyles}
-              initialCenter={{ lat: 42.36, lng: -71.054}}
-              bounds={this.bounds}
+                ref={(this.props as any).onMapMounted}
+                google={(this.props as any).google}
+                zoom={18}
+                style={mapStyles}
+                initialCenter={{ lat: 42.36, lng: -71.054 }}
+                bounds={this.bounds}
             >
                 {this.addMarkers()}
             </Map>
@@ -72,4 +109,4 @@ class MapContainer extends Component {
 }
 export default GoogleApiWrapper({
     apiKey: `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
-  })(MapContainer);
+})(withRouter(MapContainer));

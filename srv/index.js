@@ -1,22 +1,27 @@
-const express = require('express')
-const bodyParser = require('body-parser')
-const cors = require('cors')
-const path = require('path');
-const db = require('./db')
-const panoRouter = require('./routes/pano-router')
-const app = express()
-const apiPort = 8080
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const path = require("path");
+const morgan = require("morgan");
 
-app.use(bodyParser.urlencoded({ extended: true }))
-app.use(cors())
-app.use(bodyParser.json())
+const db = require("./db");
+const panoRouter = require("./routes/pano-router");
+const app = express();
+const apiPort = 8080;
 
-db.on('error', console.error.bind(console, 'MongoDB connection error:'))
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
+app.use(morgan("tiny"));
+app.use(bodyParser.json());
 
-app.get('/', (req, res) => {
-  res.sendFile(index.html, { root: path.join(__dirname,'public')});
-})
+db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
-app.use('/api', panoRouter)
+app.use("/api", panoRouter);
 
-app.listen(apiPort, () => console.log(`Server running on port ${apiPort}`))
+app.get("*", (req, res) => {
+	res.sendFile("index.html", {
+		root: path.resolve(process.cwd(), "public")
+	});
+});
+
+app.listen(apiPort, () => console.log(`Server running on port ${apiPort}`));

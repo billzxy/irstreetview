@@ -10,6 +10,8 @@ class Location {
     calibration: number = 0.0;
     id: string;
     fname: string = "";
+    neighborhood: string = "";
+    neighborArr
 
     //Methods
     constructor(id: string) {
@@ -22,11 +24,18 @@ class Location {
             this.coord.lat = result.data.data.coord.lat;
             this.coord.lng = result.data.data.coord.lng;
             this.calibration = result.data.data.calibration;
+            this.neighborhood = result.data.data.neighborhood;
         })
     }
 
-    getDistanceTo(loc: Location) {
-        return geolib.getDistance(this.coord, loc.coord);
+    getNeighborIds = async () => {
+        await api.getNeighborsById(this.id, this.neighborhood).then(result => {
+            this.neighborArr = result.data.data;
+        })
+    }
+
+    getDistanceTo(loc: Location){
+        return geolib.getDistance(this.coord,loc.coord);
     }
 
     getDistanceToNeighbors(neighbor: Location[]) {

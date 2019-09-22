@@ -109,8 +109,8 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 				/>
 			);
 		});
-	}
-	//TODO: make a pano go back to map feature
+    }
+    
 	gotoPano(id) {
 		// @ts-ignore
 		this.props.history.push(`/viewPano/${id}`);
@@ -122,8 +122,8 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 			<StyledMap
 				ref={(this.props as any).onMapMounted}
 				google={(this.props as any).google}
-				zoom={18}
-				initialCenter={{ lat: 42.36, lng: -71.054 }}
+				zoom={17}
+				initialCenter={{ lat: 42.36, lng: -71.053 }}
 				bounds={this.bounds}
 			>
 				{this.addMarkers()}

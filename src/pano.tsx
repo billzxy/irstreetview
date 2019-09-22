@@ -34,6 +34,11 @@ class Pano extends Component<PanoProps, PanoState> {
 		};
 		this.RenderPano = this.RenderPano.bind(this);
 	}
+	
+	get panoId() {
+		// @ts-ignore
+		return this.props.match.params.id || "20190724151553";
+	}
 
 	componentDidMount() {
 		var setCurrLocAndNeighbors = async () => {
@@ -45,30 +50,28 @@ class Pano extends Component<PanoProps, PanoState> {
 
 			//setNeighbors
 			this.neighbors = new Map();
+			this.setNeighbors();
+			this.setState({ isLoading: false });
 		};
 		setCurrLocAndNeighbors();
 	}
 
-	async setNeighbors() {
-		//Hardcoded function to test out two panos
-		this.neighbors.clear(); //Purge previous neighbors
-		var next;
-		switch (this.currLoc.id) {
-			case "20190724143833":
-				next = new Location("20190724143458");
-				break;
-			case "20190724143458":
-				next = new Location("20190724143833");
-				break;
+	async setNeighbors() {//Only supports two neighbors for now
+        this.neighbors.clear();//Purge previous neighbors
+		await this.currLoc.getNeighborIds();
+		let nidArr = this.currLoc.neighborArr;
+		if((nidArr as any).length===0){
+			console.log("No neighbors discorvered...");
+			return ;
 		}
-		await next.setAllAttr().then(() => {
-			this.addNeighbor(next);
-		});
-	}
-
-	get panoId() {
-		// @ts-ignore
-		return this.props.match.params.id || "20190724151553";
+		else{
+			for(let nid of nidArr as any){
+				let nextLoc = new Location(nid);
+				await nextLoc.setAllAttr().then(() => {
+					this.addNeighbor(nextLoc);
+				});
+			}
+		}
 	}
 
 	addNeighbor(n: Location) {
@@ -79,6 +82,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		});
 	}
 
+	//THREEjs objects
 	cylindergeometry = new THREE.CylinderBufferGeometry(20, 20, 15, 100, 1, true);
 	cylindermaterial = undefined;
 	cylindermesh = undefined;
@@ -279,22 +283,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			);
 		};
 		//this.InitNeighborPins();
-		/*
-        var line1 = new THREE.LineBasicMaterial( { color: "black" } );
-        var geometry1 = new THREE.Geometry();
-        geometry1.vertices.push(new THREE.Vector3( 0, -5, 0) );
-        geometry1.vertices.push(new THREE.Vector3( 0, -5, -20) );
-        var line2 = new THREE.LineBasicMaterial( { color: "red" } );
-        var geometry2 = new THREE.Geometry();
-        geometry2.vertices.push(new THREE.Vector3( 0, -5, 0) );
-        geometry2.vertices.push(new THREE.Vector3( 0, -5, 20) );
-        var southline = new THREE.Line( geometry1, line1 );
-        var northline = new THREE.Line( geometry2, line2 );
-        
-        scene.add( northline );
-        scene.add( southline );
-        //scene.add(this.lines[0]);
-        */
+		
 		var compassGroup = useRef();
 		function RenderCompass() {
 			var loader = new SVGLoader();
@@ -330,20 +319,47 @@ class Pano extends Component<PanoProps, PanoState> {
 
 		let cone = new Arrow();
 		var conemesh = useRef();
+		var conemesh1 = useRef();
+        if(conemesh.current&&conemesh1.current){
+			var iter = this.neighbors.keys();
+			//iter.next();
+			let bearing = this.neighbors.get(iter.next().value).bearing;
+			let cone0 = conemesh.current as any;
+			let cone1 = conemesh1.current as any;
+			//position
+			cone0.position.z = -Math.cos(bearing * Math.PI / 180);
+			cone0.position.x = Math.sin(bearing * Math.PI / 180);
+			//rotation
+			cone0.rotation.x = -1.5708;
+			cone0.rotation.z = (-bearing) * Math.PI / 180;
+			cone1.visible = false;
+			
+			if(this.neighbors.size>1){
+				let bearing1 = this.neighbors.get(iter.next().value).bearing;
+				cone1.visible = true;
+				//position
+				cone1.position.z = -Math.cos(bearing1 * Math.PI / 180);
+				cone1.position.x = Math.sin(bearing1 * Math.PI / 180);
+				//rotation
+				cone1.rotation.x = -1.5708;
+				cone1.rotation.z = (-bearing1) * Math.PI / 180;
+			}
+        }
 		var coneGroup = useRef();
 
 		useRender(() => {
 			TWEEN.update();
 			(coneGroup.current as any).position.set(
 				-13 * Math.sin(camera.rotation.y),
-				-2,
+				-4,
 				-13 * Math.cos(camera.rotation.y)
 			);
+			/*
 			(compassGroup.current as any).position.set(
 				-13 * Math.sin(camera.rotation.y),
 				4,
 				-13 * Math.cos(camera.rotation.y)
-			);
+			);*/
 		});
 
 		return (
@@ -358,7 +374,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					{/*<mesh onClick={updateTexture} position={[0, -6.6, 0]} rotation={[-1.571, 0, 0]}
                         geometry={new THREE.CircleGeometry(20, 100, 0)}>
                         <meshBasicMaterial attach="material" color="grey" />
-        </mesh>*/}
+        			</mesh>*/}
 					<mesh
 						onClick={() => {
 							this.CameraLookNorth(
@@ -368,13 +384,20 @@ class Pano extends Component<PanoProps, PanoState> {
 						ref={conemesh}
 						geometry={cone.geometry}
 					>
-						<meshBasicMaterial attach="material" color="white" />
+						<meshBasicMaterial attach="material" color="red" />
 					</mesh>
+					<mesh onClick={e => {}}
+                        ref={conemesh1}
+                        geometry={cone.geometry}
+                    >
+                        <meshBasicMaterial attach="material" color="grey" opacity={0.5}/>
+                    </mesh>
 				</group>
+				{/*
 				<group
 					onClick={() => this.CameraLookNorth(camera)}
 					ref={compassGroup}
-				></group>
+				></group>*/}
 			</>
 		);
 	}

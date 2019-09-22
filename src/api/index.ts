@@ -1,6 +1,6 @@
 import axios from 'axios'
 import mockedPanos from '../mocks/panos.json'
-import { deprecate } from 'util';
+import mockedNeighbors from '../mocks/neighbors.json'
 
 /*
 const hostname = "localhost";
@@ -22,7 +22,7 @@ export const getPanoAllAttrById = (id) => api.get(`/pano/allAttr/${id}`)
 export const updateCalibrationById = (id, payload) => api.put(`/pano/cal/${id}`, payload)
 */
 
-function getDataFromJSON(data, query, id?){
+function getDataFromJSONArray(data, query, id?){
     if(!id){//case when api resembles to 'getAllBlaBlah'
         for(var i=0; i<data.length; i++){
             var resultArr = [];
@@ -44,13 +44,30 @@ function getDataFromJSON(data, query, id?){
         }
     }
 }
+
+function getTwoNeighbors(id, nhood){
+    let hood = mockedNeighbors[nhood];
+    if(hood.length<2)
+        return [];
+    for(var i=0; i<hood.length; i++){
+        if(id===hood[i]){
+            if(i===0) //first one, return second as neighbor
+                return [ hood[1] ];
+            else if(i===hood.length-1) //last one, return the second to the last as neighbor 
+                return [ hood[hood.length-2] ];
+            //Otherwise, return the neighboring two
+            return [ hood[i-1], hood[i+1] ];
+        }
+    }
+}
+
 // Should use superagent to mock when we have time
-export const getPanoCoordById = (id) => Promise.resolve({ data: { data: getDataFromJSON(mockedPanos,["coord"], id) } })
+export const getPanoCoordById = (id) => Promise.resolve({ data: { data: getDataFromJSONArray(mockedPanos,["coord"], id) } })
 //export const getAllPanoIdAndCoord = () => Promise.resolve({ data: { data: getDataFromJSON(mockedPanos,["id", "coord"]) } })
 export const getAllPanoIdAndCoord = () => Promise.resolve({ data: { data: mockedPanos } })
-export const getPanoAllAttrById = (id) => Promise.resolve({ data: { data: getDataFromJSON(mockedPanos,[], id) } })
-export const getPanoFileNameById = (id) => Promise.resolve({ data: { data:  getDataFromJSON(mockedPanos,["filename"], id) } })
-
+export const getPanoAllAttrById = (id) => Promise.resolve({ data: { data: getDataFromJSONArray(mockedPanos,[], id) } })
+export const getPanoFileNameById = (id) => Promise.resolve({ data: { data:  getDataFromJSONArray(mockedPanos,["filename"], id) } })
+export const getNeighborsById = (id, neighborhood) => Promise.resolve({ data: { data: getTwoNeighbors(id, neighborhood) } })
 
 const apis = {
     //insertPano,
@@ -62,7 +79,8 @@ const apis = {
     getPanoFileNameById,
     getPanoCoordById,
     getAllPanoIdAndCoord,
-    getPanoAllAttrById
+    getPanoAllAttrById,
+    getNeighborsById
 }
 
 export default apis

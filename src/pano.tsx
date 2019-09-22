@@ -7,6 +7,7 @@ import SVGLoader from "three-svg-loader";
 import "./style/pano.css";
 import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
+import Spinner from "./components/spinner";
 
 const TWEEN = require("@tweenjs/tween.js");
 
@@ -92,7 +93,9 @@ class Pano extends Component<PanoProps, PanoState> {
 	loadTexture() {
 		this.texture = this.loader.load(
 			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
-			undefined,
+			() => {
+				this.setState({ isLoading: false });
+			},
 			undefined,
 			err => {
 				console.error(err);
@@ -402,8 +405,8 @@ class Pano extends Component<PanoProps, PanoState> {
 	render() {
 		const { isLoading } = this.state;
 		return isLoading ? (
-			<div>
-				<h3>Loading...</h3>
+			<div className={"spinner-container"}>
+				<Spinner width={100} height={100} />
 			</div>
 		) : (
 			<div className="Pano-canvas">

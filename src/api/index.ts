@@ -46,17 +46,18 @@ function getDataFromJSONArray(data, query, id?){
 }
 
 function getTwoNeighbors(id, nhood){
-    let hood = mockedNeighbors[nhood]
+    let hood = mockedNeighbors[nhood];
     if(hood.length<2)
         return [];
     for(var i=0; i<hood.length; i++){
-        if(id===hood[i][id])
+        if(id===hood[i]){
             if(i===0) //first one, return second as neighbor
                 return [ hood[1] ];
             else if(i===hood.length-1) //last one, return the second to the last as neighbor 
                 return [ hood[hood.length-2] ];
             //Otherwise, return the neighboring two
             return [ hood[i-1], hood[i+1] ];
+        }
     }
 }
 
@@ -78,7 +79,8 @@ const apis = {
     getPanoFileNameById,
     getPanoCoordById,
     getAllPanoIdAndCoord,
-    getPanoAllAttrById
+    getPanoAllAttrById,
+    getNeighborsById
 }
 
 export default apis

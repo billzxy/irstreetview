@@ -11,6 +11,7 @@ class Location {
     id: string;
     fname: string = "";
     neighborhood: string = "";
+    neighborArr
 
     //Methods
     constructor(id: string) {
@@ -23,12 +24,14 @@ class Location {
             this.coord.lat = result.data.data.coord.lat;
             this.coord.lng = result.data.data.coord.lng;
             this.calibration = result.data.data.calibration;
-            this.neighborhood = result.data.data.neightborhood;
+            this.neighborhood = result.data.data.neighborhood;
         })
     }
 
-    getNeighborIds(){
-        
+    getNeighborIds = async () => {
+        await api.getNeighborsById(this.id, this.neighborhood).then(result => {
+            this.neighborArr = result.data.data;
+        })
     }
 
     getDistanceTo(loc: Location){

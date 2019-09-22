@@ -1,6 +1,6 @@
 .Pano-canvas {
 	background-color: white;
-	min-height: 75vh;
+	height: calc(100vh - 64px - 48px);
 	display: flex;
 	flex-direction: column;
 	align-items: center;

@@ -43,7 +43,7 @@ export const Interface: React.FC = () => {
 				<Content>
 					<Switch>
 						<Route path="/maps" component={GMap} />
-						<Route path="/viewPano/:id" component={Pano} />
+						<Route exact={true} path="/viewPano/:id" component={Pano} />
 						<Route path="/viewPano" component={Pano} />
 						<Redirect exact from="/" to="maps" />
 					</Switch>

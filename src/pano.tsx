@@ -88,7 +88,7 @@ class Pano extends Component<PanoProps, PanoState> {
 
 	loadTexture() {
 		this.texture = this.loader.load(
-			process.env.PUBLIC_URL + "resource/" + this.currLoc.fname,
+			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 			undefined,
 			undefined,
 			err => {

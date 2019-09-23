@@ -185,6 +185,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		var conemesh1 = useRef();
 		var n0, n1;
 
+		// Mouse drag rotation controls
 		var mouseDown = false,
 			mouseX = 0,
 			mouseY = 0;
@@ -214,6 +215,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			mouseDown = false;
 		}
 
+		//Touch rotation control
 		var startX = 0;
 
 		function onTouchStart(event) {
@@ -223,26 +225,32 @@ class Pano extends Component<PanoProps, PanoState> {
 		function onTouchMove(event) {
 			var deltaX = (event.targetTouches[0].pageX - startX);
 			startX = (event.targetTouches[0].pageX);
-			camera.rotation.y += ( deltaX / 1000 );
+			rotateScene(deltaX);
 		}
 
+		//Mouse wheel rotation control
+		function onScroll(event) {
+			var deltaY = event.wheelDeltaY / 3;
+			rotateScene(deltaY);
+		}
+		
+		
+
+		function rotateScene(deltaX) {
+			//console.log(camera.rotation.y);
+			camera.rotation.y += deltaX / 1000;
+			camera.rotation.y %= 2 * Math.PI;
+		}
+		
 		function onWindowResize(){
 			gl.setSize( canvas.clientWidth, canvas.clientHeight );
 			(camera as any).aspect = window.innerWidth / window.innerHeight;
 			(camera as any).updateProjectionMatrix();
 		}
-		
-		function rotateScene(deltaX) {
-			//console.log(camera.rotation.y);
-			camera.rotation.y += deltaX / 1000;
-			camera.rotation.y %= 2 * Math.PI;
-			
-		}
-
 		canvas.addEventListener("mousemove", e => onMouseMove(e), false);
 		canvas.addEventListener("mousedown", e => onMouseDown(e), false);
 		canvas.addEventListener("mouseup", e => onMouseUp(e), false);
-
+		window.addEventListener("mousewheel", e => onScroll(e),false);
 		canvas.addEventListener("touchmove", e => onTouchMove(e), false);
 		canvas.addEventListener("touchstart", e => onTouchStart(e), false);
 		window.addEventListener( 'resize', onWindowResize, false );

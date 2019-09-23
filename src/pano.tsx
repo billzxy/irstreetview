@@ -51,7 +51,6 @@ class Pano extends Component<PanoProps, PanoState> {
 			//setNeighbors
 			this.neighbors = new Map();
 			this.setNeighbors();
-			this.setState({ isLoading: false });
 		};
 		setCurrLocAndNeighbors();
 	}

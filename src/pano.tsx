@@ -8,6 +8,7 @@ import "./style/pano.css";
 import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
 import Spinner from "./components/spinner";
+//import OrbitControls from 'three-orbitcontrols'
 
 const TWEEN = require("@tweenjs/tween.js");
 
@@ -167,12 +168,24 @@ class Pano extends Component<PanoProps, PanoState> {
 		//canvas.width  = canvas.clientWidth;
 		//canvas.height = canvas.clientHeight;
 		//gl.setViewport(0, 0, canvas.clientWidth, canvas.clientHeight);
+		/*var controls = new OrbitControls( camera, gl.domElement );
+		controls.update();
+		controls.touches = {
+			ONE: THREE.TOUCH.ROTATE,
+			TWO: THREE.TOUCH.DOLLY_PAN
+		}
+		controls.mouseButtons = {
+			LEFT: THREE.MOUSE.ROTATE,
+			MIDDLE: THREE.MOUSE.DOLLY,
+			RIGHT: THREE.MOUSE.PAN
+		}*/
 
 		let cone = new Arrow();
 		var conemesh = useRef();
 		var conemesh1 = useRef();
 		var n0, n1;
 
+		// Mouse drag rotation controls
 		var mouseDown = false,
 			mouseX = 0,
 			mouseY = 0;
@@ -202,21 +215,46 @@ class Pano extends Component<PanoProps, PanoState> {
 			mouseDown = false;
 		}
 
-		function onWindowResize(){
-			gl.setSize( canvas.clientWidth, canvas.clientHeight );
-			(camera as any).aspect = window.innerWidth / window.innerHeight;
-			(camera as any).updateProjectionMatrix();
+		//Touch rotation control
+		var startX = 0;
+
+		function onTouchStart(event) {
+			startX = (event.targetTouches[0].pageX);
 		}
 
-		canvas.addEventListener("mousemove", e => onMouseMove(e), false);
-		canvas.addEventListener("mousedown", e => onMouseDown(e), false);
-		canvas.addEventListener("mouseup", e => onMouseUp(e), false);
-		window.addEventListener( 'resize', onWindowResize, false );
+		function onTouchMove(event) {
+			var deltaX = (event.targetTouches[0].pageX - startX);
+			startX = (event.targetTouches[0].pageX);
+			rotateScene(deltaX);
+		}
+
+		//Mouse wheel rotation control
+		function onScroll(event) {
+			var deltaY = event.wheelDeltaY / 3;
+			rotateScene(deltaY);
+		}
+		
+		
+
 		function rotateScene(deltaX) {
 			//console.log(camera.rotation.y);
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
 		}
+		
+		function onWindowResize(){
+			gl.setSize( canvas.clientWidth, canvas.clientHeight );
+			(camera as any).aspect = window.innerWidth / window.innerHeight;
+			(camera as any).updateProjectionMatrix();
+		}
+		canvas.addEventListener("mousemove", e => onMouseMove(e), false);
+		canvas.addEventListener("mousedown", e => onMouseDown(e), false);
+		canvas.addEventListener("mouseup", e => onMouseUp(e), false);
+		window.addEventListener("mousewheel", e => onScroll(e),false);
+		canvas.addEventListener("touchmove", e => onTouchMove(e), false);
+		canvas.addEventListener("touchstart", e => onTouchStart(e), false);
+		window.addEventListener( 'resize', onWindowResize, false );
+		
 
 		var camZoom = id => {
 			const depth = 15.5;
@@ -240,6 +278,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			});
 			tweenRot.onComplete(() => {
 				camera.rotation.y = (-this.neighbors.get(id).bearing * Math.PI) / 180;
+				
 			});
 
 			var zoom = {

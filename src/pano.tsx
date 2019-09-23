@@ -115,6 +115,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		this.cylindermesh.rotation.y = this.currLoc.calibration;
 	}
 
+	/*
 	InitNeighborPins() {
 		console.log(this.lines);
 		if (this.lines.length !== 0) {
@@ -134,7 +135,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			);
 			this.lines.push(new THREE.Line(geometry, line));
 		});
-	}
+	}*/
 
 	CameraLookNorth(camera) {
 		var rotBegin = {
@@ -159,9 +160,19 @@ class Pano extends Component<PanoProps, PanoState> {
 		var mainCam = useRef();
 		var { gl, camera, canvas, scene } = useThree();
 		(camera as any).fov = 40;
-		gl.setSize(window.innerWidth, window.innerHeight);
+		//gl.setSize(window.innerWidth, window.innerHeight);
+		gl.setSize(canvas.clientWidth, canvas.clientHeight);
+		
 		camera.position.set(0, 0, 0);
 		camera.lookAt(0, 0, 0);
+		//canvas.width  = canvas.clientWidth;
+		//canvas.height = canvas.clientHeight;
+		//gl.setViewport(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+		let cone = new Arrow();
+		var conemesh = useRef();
+		var conemesh1 = useRef();
+		var n0, n1;
 
 		var mouseDown = false,
 			mouseX = 0,
@@ -191,9 +202,17 @@ class Pano extends Component<PanoProps, PanoState> {
 			evt.preventDefault();
 			mouseDown = false;
 		}
+
+		function onWindowResize(){
+			gl.setSize( canvas.clientWidth, canvas.clientHeight );
+			(camera as any).aspect = window.innerWidth / window.innerHeight;
+			(camera as any).updateProjectionMatrix();
+		}
+
 		canvas.addEventListener("mousemove", e => onMouseMove(e), false);
 		canvas.addEventListener("mousedown", e => onMouseDown(e), false);
 		canvas.addEventListener("mouseup", e => onMouseUp(e), false);
+		window.addEventListener( 'resize', onWindowResize, false );
 		function rotateScene(deltaX) {
 			//console.log(camera.rotation.y);
 			camera.rotation.y += deltaX / 1000;
@@ -248,8 +267,8 @@ class Pano extends Component<PanoProps, PanoState> {
 				(camera as any).fov = 40;
 				(camera as any).updateProjectionMatrix();
 				this.cylindermaterial.map = this.texture;
-				//this.cylindermesh.rotation.y = this.currLoc.calibration
-				//await this.setNeighbors();//.then(()=>{this.InitNeighborPins()});
+				this.cylindermesh.rotation.y = this.currLoc.calibration
+				await this.setNeighbors().then(RenderArrows);//.then(()=>{this.InitNeighborPins()});
 			});
 			tweenRot.chain(tweenZoom);
 			tweenRot.start();
@@ -258,21 +277,11 @@ class Pano extends Component<PanoProps, PanoState> {
 		scene.add(this.cylindermesh);
 		//RenderCompass();
 
-		var updateTexture = async () => {
-			//TODO: Implement parameter passing
-			var id = "";
-			switch (this.currLoc.id) {
-				case "20190724143833":
-					id = "20190724143458";
-					break;
-				case "20190724143458":
-					id = "20190724143833";
-					break;
-			}
-			this.currLoc = new Location(id);
-			await this.currLoc.setAllAttr();
+		var updateTexture = async (id) => {
+			this.currLoc = this.neighbors.get(id).location;
+			//await this.currLoc.setAllAttr();
 			this.texture = this.loader.load(
-				process.env.PUBLIC_URL + "resource/" + this.currLoc.fname,
+				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 				() => {
 					camZoom(id);
 				},
@@ -284,6 +293,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		};
 		//this.InitNeighborPins();
 		
+		/*
 		var compassGroup = useRef();
 		function RenderCompass() {
 			var loader = new SVGLoader();
@@ -315,35 +325,34 @@ class Pano extends Component<PanoProps, PanoState> {
 					console.log("Error Loading Compass");
 				}
 			);
-		}
+		}*/
 
-		let cone = new Arrow();
-		var conemesh = useRef();
-		var conemesh1 = useRef();
-        if(conemesh.current&&conemesh1.current){
+		var RenderArrows = () => {
 			var iter = this.neighbors.keys();
 			//iter.next();
-			let bearing = this.neighbors.get(iter.next().value).bearing;
+			n0 = this.neighbors.get(iter.next().value);
 			let cone0 = conemesh.current as any;
 			let cone1 = conemesh1.current as any;
 			//position
-			cone0.position.z = -Math.cos(bearing * Math.PI / 180);
-			cone0.position.x = Math.sin(bearing * Math.PI / 180);
+			cone0.position.z = -Math.cos(n0.bearing * Math.PI / 180);
+			cone0.position.x = Math.sin(n0.bearing * Math.PI / 180);
 			//rotation
 			cone0.rotation.x = -1.5708;
-			cone0.rotation.z = (-bearing) * Math.PI / 180;
+			cone0.rotation.z = (-n0.bearing) * Math.PI / 180;
 			cone1.visible = false;
-			
 			if(this.neighbors.size>1){
-				let bearing1 = this.neighbors.get(iter.next().value).bearing;
+				n1 = this.neighbors.get(iter.next().value);
 				cone1.visible = true;
 				//position
-				cone1.position.z = -Math.cos(bearing1 * Math.PI / 180);
-				cone1.position.x = Math.sin(bearing1 * Math.PI / 180);
+				cone1.position.z = -Math.cos(n1.bearing * Math.PI / 180);
+				cone1.position.x = Math.sin(n1.bearing * Math.PI / 180);
 				//rotation
 				cone1.rotation.x = -1.5708;
-				cone1.rotation.z = (-bearing1) * Math.PI / 180;
+				cone1.rotation.z = (-n1.bearing) * Math.PI / 180;
 			}
+		}
+        if(conemesh.current&&conemesh1.current){
+			RenderArrows();
         }
 		var coneGroup = useRef();
 
@@ -370,27 +379,35 @@ class Pano extends Component<PanoProps, PanoState> {
 					aspect={window.innerWidth / window.innerHeight}
 					onUpdate={self => self.updateProjectionMatrix()}
 				/>
-				<group ref={coneGroup}>
-					{/*<mesh onClick={updateTexture} position={[0, -6.6, 0]} rotation={[-1.571, 0, 0]}
-                        geometry={new THREE.CircleGeometry(20, 100, 0)}>
-                        <meshBasicMaterial attach="material" color="grey" />
-        			</mesh>*/}
-					<mesh
+				<group ref={coneGroup} /*group of arrows */>
+					<mesh //Compass Plate 
+						//onClick={()=>{this.CameraLookNorth(camera);}} 
+						position={[0, -0.5, 0]} rotation={[-1.571, 0, 0]}
+                        geometry={new THREE.CircleGeometry(2, 100, 0)}>
+                        <meshBasicMaterial attach="material" color="white" opacity={0.0} transparent={true}/>
+					</mesh>
+
+					<mesh //First Arrow
 						onClick={() => {
-							this.CameraLookNorth(
-								camera
-							); /*this.currLoc.updateCalibration(camera)*/
+							updateTexture(n0.location.id); /*this.currLoc.updateCalibration(camera)*/
 						}}
+						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
+						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
 						ref={conemesh}
 						geometry={cone.geometry}
 					>
-						<meshBasicMaterial attach="material" color="red" />
+						<meshBasicMaterial attach="material" color="light grey" opacity={0.5} transparent={true}/>
 					</mesh>
-					<mesh onClick={e => {}}
+					<mesh //Second Arrow
+						onClick={() => {
+							updateTexture(n1.location.id);
+						}}
+						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
+						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
                         ref={conemesh1}
                         geometry={cone.geometry}
                     >
-                        <meshBasicMaterial attach="material" color="grey" opacity={0.5}/>
+                        <meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
                     </mesh>
 				</group>
 				{/*

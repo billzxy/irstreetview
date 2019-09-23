@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/irstreetview/precache-manifest.a8a53732676405f8ec39e0960aca3635.js"
+  "/irstreetview/precache-manifest.c0fcb15881cfbd1e98521b4177ebf416.js"
 );
 
 self.addEventListener('message', (event) => {

@@ -8,6 +8,7 @@ import "./style/pano.css";
 import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
 import Spinner from "./components/spinner";
+import { Triangle } from "three";
 //import OrbitControls from 'three-orbitcontrols'
 
 const TWEEN = require("@tweenjs/tween.js");
@@ -237,7 +238,6 @@ class Pano extends Component<PanoProps, PanoState> {
 		
 
 		function rotateScene(deltaX) {
-			console.log(camera.rotation.y);
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
 		}
@@ -261,7 +261,6 @@ class Pano extends Component<PanoProps, PanoState> {
 			const resFov = 75;
 			const camAt = (this.neighbors.get(id).bearing * Math.PI) / 180;
 			var endAt = (-this.neighbors.get(id).bearing * Math.PI) / 180;
-			console.log("before: "+endAt);
 			if (camera.rotation.y > 0) {
 				endAt = 2 * Math.PI - (this.neighbors.get(id).bearing * Math.PI) / 180;
 			}
@@ -270,7 +269,6 @@ class Pano extends Component<PanoProps, PanoState> {
 			}else if( camera.rotation.y-endAt <= -Math.PI && camera.rotation.y-endAt< -2*Math.PI){
 				endAt = - 2 * Math.PI + endAt;
 			}
-			console.log("after: "+endAt);
 			var rotBegin = {
 				at: (camera as any).rotation.y
 			};
@@ -338,13 +336,11 @@ class Pano extends Component<PanoProps, PanoState> {
 			);
 		};
 		//this.InitNeighborPins();
-		
 		/*
-		var compassGroup = useRef();
 		function RenderCompass() {
 			var loader = new SVGLoader();
 			loader.load(
-				process.env.PUBLIC_URL + "compass.svg",
+				require(`./assets/viewPano/compass.svg`),
 				function(data) {
 					var paths = data.paths;
 					for (var i = 0; i < paths.length; i++) {
@@ -363,7 +359,7 @@ class Pano extends Component<PanoProps, PanoState> {
 						}
 					}
 					//console.log(compassGroup);
-					(compassGroup.current as any).scale.set(13, 13, 13);
+					//(compassGroup.current as any).scale.set(13, 13, 13);
 					scene.add(compassGroup.current);
 				},
 				undefined,
@@ -371,8 +367,9 @@ class Pano extends Component<PanoProps, PanoState> {
 					console.log("Error Loading Compass");
 				}
 			);
-		}*/
-
+		}
+		RenderCompass();
+		*/
 		var RenderArrows = () => {
 			var iter = this.neighbors.keys();
 			//iter.next();
@@ -401,7 +398,23 @@ class Pano extends Component<PanoProps, PanoState> {
 			RenderArrows();
         }
 		var coneGroup = useRef();
+		var compassGroup = useRef();
+		var triGeo = useRef();
+		let triGeoArr = [new THREE.Vector3(0, 1, 0), new THREE.Vector3(-0.6, -1, 0), new THREE.Vector3(0, -0.5, 0), new THREE.Vector3(0.6, -1, 0)];
+		if (triGeo.current){
+			(triGeo.current as any).vertices = triGeoArr;
+			(triGeo.current as any).faces.push( new THREE.Face3( 0, 1, 2 ) );
+			(triGeo.current as any).faces.push( new THREE.Face3( 0, 2, 3 ) );
+			(triGeo.current as any).computeFaceNormals();
+			(triGeo.current as any).scale(0.3, 0.3, 0.3);
+		}
+		function setChildrenOpacity(group, opc){
+			for(let child of group){
+				child.material.opacity = opc;
+			}
+		}
 
+		
 		useRender(() => {
 			TWEEN.update();
 			(coneGroup.current as any).position.set(
@@ -409,12 +422,13 @@ class Pano extends Component<PanoProps, PanoState> {
 				-4,
 				-13 * Math.cos(camera.rotation.y)
 			);
-			/*
 			(compassGroup.current as any).position.set(
-				-13 * Math.sin(camera.rotation.y),
-				4,
-				-13 * Math.cos(camera.rotation.y)
-			);*/
+				-13 * Math.sin(camera.rotation.y-0.4),
+				-3,
+				-13 * Math.cos(camera.rotation.y-0.4)
+			);
+			(compassGroup.current as any).rotation.y=camera.rotation.y;
+			(compassGroup.current as any).rotation.z=-camera.rotation.y;
 		});
 
 		return (
@@ -426,13 +440,6 @@ class Pano extends Component<PanoProps, PanoState> {
 					onUpdate={self => self.updateProjectionMatrix()}
 				/>
 				<group ref={coneGroup} /*group of arrows */>
-					<mesh //Compass Plate 
-						//onClick={()=>{this.CameraLookNorth(camera);}} 
-						position={[0, -0.5, 0]} rotation={[-1.571, 0, 0]}
-                        geometry={new THREE.CircleGeometry(2, 100, 0)}>
-                        <meshBasicMaterial attach="material" color="white" opacity={0.0} transparent={true}/>
-					</mesh>
-
 					<mesh //First Arrow
 						onClick={() => {
 							updateTexture(n0.location.id); /*this.currLoc.updateCalibration(camera)*/
@@ -456,11 +463,27 @@ class Pano extends Component<PanoProps, PanoState> {
                         <meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
                     </mesh>
 				</group>
-				{/*
 				<group
 					onClick={() => this.CameraLookNorth(camera)}
+					onPointerOver={e => {setChildrenOpacity(e.object.children, 0.8);}}
+					onPointerOut={e => {setChildrenOpacity(e.object.children, 0.5);}}
 					ref={compassGroup}
-				></group>*/}
+				>
+					<mesh //Compass Plate 
+						position={[0, 0, 0]}
+						geometry={new THREE.CircleGeometry(0.4, 100, 0)}>
+						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true} />
+					</mesh>
+					<mesh //Compass North Arrow 
+						position={[0, 0.03, 0.01]}
+					>	
+						<geometry 
+							attach="geometry"
+							ref={triGeo}
+						/>
+						<meshBasicMaterial attach="material" color="red" opacity={0.5} transparent={true} />
+					</mesh>
+				</group>
 			</>
 		);
 	}

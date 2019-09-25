@@ -89,7 +89,12 @@ class Pano extends Component<PanoProps, PanoState> {
 	cylindermesh = undefined;
 	texture = undefined;
 	loader = new THREE.TextureLoader();
-	lines = [];
+    lines = [];
+    
+    tempcylindergeometry = new THREE.CylinderBufferGeometry(21, 21, 15, 100, 1, true);
+	tempcylindermaterial = undefined;
+    tempcylindermesh = undefined;
+
 
 	loadTexture() {
 		this.texture = this.loader.load(
@@ -113,7 +118,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		);
 		this.cylindergeometry.scale(-1, 1, 1);
 		//this.cylindermesh.position.y = 0
-		this.cylindermesh.rotation.y = this.currLoc.calibration;
+        this.cylindermesh.rotation.y = this.currLoc.calibration;
 	}
 
 	/*
@@ -233,11 +238,10 @@ class Pano extends Component<PanoProps, PanoState> {
 		function onScroll(event) {
 			var deltaY = event.wheelDeltaY / 3;
 			rotateScene(deltaY);
-		}
-		
-		
-
+        }
+        
 		function rotateScene(deltaX) {
+            console.log(camera.rotation.y);
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
 		}
@@ -254,9 +258,31 @@ class Pano extends Component<PanoProps, PanoState> {
 		canvas.addEventListener("touchmove", e => onTouchMove(e), false);
 		canvas.addEventListener("touchstart", e => onTouchStart(e), false);
 		window.addEventListener( 'resize', onWindowResize, false );
-		
+        
+        var fadeTexture = () => {
+            var fadeBegin = {
+				at: this.cylindermaterial.opacity
+			};
+			var fadeEnd = {
+				at: 0.1
+			};
+			var crossfade = new TWEEN.Tween(fadeBegin)
+				.to(fadeEnd, 500)
+				.easing(TWEEN.Easing.Quadratic.InOut);
+			crossfade.onUpdate(() => {
+                //console.log(this.cylindermaterial);
+				this.cylindermaterial.opacity = fadeBegin.at;
+			});
+			crossfade.onComplete(() => {
+                this.cylindermaterial.opacity = 1.0;
+                this.cylindermaterial.transparent = false;
+            });
+            this.cylindermaterial.transparent = true;
+            crossfade.start();
+        }
 
-		var camZoom = id => {
+		var animateTransition = id => {
+            //Set up parameters for TWEEN animations
 			const depth = 15.5;
 			const resFov = 75;
 			const camAt = (this.neighbors.get(id).bearing * Math.PI) / 180;
@@ -289,45 +315,72 @@ class Pano extends Component<PanoProps, PanoState> {
 			var zoom = {
 				zVal: (camera as any).position.z,
 				xVal: (camera as any).position.x,
-				fovValue: (camera as any).fov
+                fovValue: (camera as any).fov,
+                opacity: this.cylindermaterial.opacity
 			};
 			var zoomEnd = {
 				zVal: -depth * Math.cos(camAt),
 				xVal: depth * Math.sin(camAt),
-				fovValue: resFov
+                fovValue: resFov,
+                opacity: 0.1
 			};
 			var tweenZoom = new TWEEN.Tween(zoom).to(zoomEnd, 500);
 
-			tweenZoom.onUpdate(function() {
+			tweenZoom.onUpdate(() => {
 				(camera as any).position.z = zoom.zVal;
 				(camera as any).position.x = zoom.xVal;
 				(camera as any).fov = zoom.fovValue;
-				(camera as any).updateProjectionMatrix();
+                (camera as any).updateProjectionMatrix();
+                this.cylindermaterial.opacity = zoom.opacity;
 			});
 			tweenZoom.onComplete(async () => {
-				(camera as any).position.z = 0;
-				(camera as any).position.x = 0;
+                //reset camera zoom and pos
+                camera.position.set(0,0,0);
+				//(camera as any).position.z = 0;
+				//(camera as any).position.x = 0;
 				(camera as any).fov = 40;
-				(camera as any).updateProjectionMatrix();
-				this.cylindermaterial.map = this.texture;
-				this.cylindermesh.rotation.y = this.currLoc.calibration
-				console.log(camera.rotation.y);
+                (camera as any).updateProjectionMatrix();
+                //When animations are completed, textures are swapped
+                
+                this.cylindermaterial.map = this.texture;
+                this.cylindermesh.rotation.y = this.currLoc.calibration;
+                this.cylindermaterial.transparent = false;
+                this.cylindermaterial.opacity = 1.0;
+
+                scene.remove(this.tempcylindermesh);
+                this.tempcylindermesh.geometry.dispose();
+                this.tempcylindermesh.material.dispose();
+                this.tempcylindermesh = undefined;
+                this.tempcylindergeometry.scale(-1,1,1);
 				await this.setNeighbors().then(RenderArrows);//.then(()=>{this.InitNeighborPins()});
 			});
-			tweenRot.chain(tweenZoom);
+            tweenRot.chain(tweenZoom);
+            this.cylindermaterial.transparent = true;
+            
 			tweenRot.start();
 		};
-
-		scene.add(this.cylindermesh);
+        
+        scene.add(this.cylindermesh);
 		//RenderCompass();
 
-		var updateTexture = async (id) => {
+		var transitionToScene = async (id) => {
 			this.currLoc = this.neighbors.get(id).location;
 			//await this.currLoc.setAllAttr();
 			this.texture = this.loader.load(
 				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
-				() => {
-					camZoom(id);
+				() => {//onComplete
+                    this.tempcylindermaterial = new THREE.MeshBasicMaterial({
+                        map: this.texture,
+                        side: THREE.DoubleSide
+                    });
+                    this.tempcylindermesh = new THREE.Mesh(
+                        this.tempcylindergeometry,
+                        this.tempcylindermaterial
+                    );
+                    this.tempcylindergeometry.scale(-1, 1, 1);
+                    this.tempcylindermesh.rotation.y = this.currLoc.calibration;
+                    scene.add(this.tempcylindermesh);
+					animateTransition(id);
 				},
 				undefined,
 				err => {
@@ -412,7 +465,12 @@ class Pano extends Component<PanoProps, PanoState> {
 			for(let child of group){
 				child.material.opacity = opc;
 			}
-		}
+        }
+        
+        var testMesh = useRef();
+        if(testMesh.current){
+            (testMesh.current as any).geometry.scale(2,2,2);
+        }
 
 		
 		useRender(() => {
@@ -439,29 +497,41 @@ class Pano extends Component<PanoProps, PanoState> {
 					aspect={window.innerWidth / window.innerHeight}
 					onUpdate={self => self.updateProjectionMatrix()}
 				/>
+                
 				<group ref={coneGroup} /*group of arrows */>
 					<mesh //First Arrow
 						onClick={() => {
-							updateTexture(n0.location.id); /*this.currLoc.updateCalibration(camera)*/
+							transitionToScene(n0.location.id); /*this.currLoc.updateCalibration(camera)*/
 						}}
-						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
+						onPointerOver={e => {(e.object as any).material.opacity=0.7;}}
 						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
 						ref={conemesh}
 						geometry={cone.geometry}
 					>
-						<meshBasicMaterial attach="material" color="light grey" opacity={0.5} transparent={true}/>
+						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
 					</mesh>
 					<mesh //Second Arrow
 						onClick={() => {
-							updateTexture(n1.location.id);
+							transitionToScene(n1.location.id);
 						}}
-						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
+						onPointerOver={e => {(e.object as any).material.opacity=0.7;}}
 						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
                         ref={conemesh1}
                         geometry={cone.geometry}
                     >
                         <meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
                     </mesh>
+                    {/*<mesh //Test mesh
+                        onClick={() => fadeTexture()}
+						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
+						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
+                        ref={testMesh}
+                        geometry={cone.geometry}
+                        position={[8,0,0]}
+                        rotation={[1.571,0,0]}
+                    >
+                        <meshBasicMaterial attach="material" color="blue" opacity={0.5} transparent={true}/>
+                    </mesh>*/}
 				</group>
 				<group
 					onClick={() => this.CameraLookNorth(camera)}

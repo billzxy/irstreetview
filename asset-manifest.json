@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/irstreetview/static/css/main.0ed2af1a.chunk.css",
-    "main.js": "/irstreetview/static/js/main.20a92170.chunk.js",
-    "main.js.map": "/irstreetview/static/js/main.20a92170.chunk.js.map",
+    "main.js": "/irstreetview/static/js/main.a0c9c26d.chunk.js",
+    "main.js.map": "/irstreetview/static/js/main.a0c9c26d.chunk.js.map",
     "runtime~main.js": "/irstreetview/static/js/runtime~main.a142e824.js",
     "runtime~main.js.map": "/irstreetview/static/js/runtime~main.a142e824.js.map",
     "static/js/2.c3971e1e.chunk.js": "/irstreetview/static/js/2.c3971e1e.chunk.js",
     "static/js/2.c3971e1e.chunk.js.map": "/irstreetview/static/js/2.c3971e1e.chunk.js.map",
     "index.html": "/irstreetview/index.html",
-    "precache-manifest.517c44535b0dfbdacce38a3f4e536fcf.js": "/irstreetview/precache-manifest.517c44535b0dfbdacce38a3f4e536fcf.js",
+    "precache-manifest.7c8a90e0d8372d2634b29873e2a19641.js": "/irstreetview/precache-manifest.7c8a90e0d8372d2634b29873e2a19641.js",
     "service-worker.js": "/irstreetview/service-worker.js",
     "static/css/main.0ed2af1a.chunk.css.map": "/irstreetview/static/css/main.0ed2af1a.chunk.css.map",
     "static/media/pano-20190724143458-mx.png": "/irstreetview/static/media/pano-20190724143458-mx.072de3d6.png",

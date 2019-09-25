@@ -237,7 +237,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		
 
 		function rotateScene(deltaX) {
-			//console.log(camera.rotation.y);
+			console.log(camera.rotation.y);
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
 		}
@@ -261,9 +261,16 @@ class Pano extends Component<PanoProps, PanoState> {
 			const resFov = 75;
 			const camAt = (this.neighbors.get(id).bearing * Math.PI) / 180;
 			var endAt = (-this.neighbors.get(id).bearing * Math.PI) / 180;
+			console.log("before: "+endAt);
 			if (camera.rotation.y > 0) {
 				endAt = 2 * Math.PI - (this.neighbors.get(id).bearing * Math.PI) / 180;
 			}
+			if(camera.rotation.y-endAt >= Math.PI && camera.rotation.y-endAt<2*Math.PI){
+				endAt += 2 * Math.PI; 
+			}else if( camera.rotation.y-endAt <= -Math.PI && camera.rotation.y-endAt< -2*Math.PI){
+				endAt = - 2 * Math.PI + endAt;
+			}
+			console.log("after: "+endAt);
 			var rotBegin = {
 				at: (camera as any).rotation.y
 			};
@@ -306,6 +313,7 @@ class Pano extends Component<PanoProps, PanoState> {
 				(camera as any).updateProjectionMatrix();
 				this.cylindermaterial.map = this.texture;
 				this.cylindermesh.rotation.y = this.currLoc.calibration
+				console.log(camera.rotation.y);
 				await this.setNeighbors().then(RenderArrows);//.then(()=>{this.InitNeighborPins()});
 			});
 			tweenRot.chain(tweenZoom);

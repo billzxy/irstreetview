@@ -45,20 +45,61 @@ function getDataFromJSONArray(data, query, id?){
     }
 }
 
-function getTwoNeighbors(id, nhood){
-    let hood = mockedNeighbors[nhood];
-    if(hood.length<2)
-        return [];
-    for(var i=0; i<hood.length; i++){
-        if(id===hood[i]){
-            if(i===0) //first one, return second as neighbor
-                return [ hood[1] ];
-            else if(i===hood.length-1) //last one, return the second to the last as neighbor 
-                return [ hood[hood.length-2] ];
-            //Otherwise, return the neighboring two
-            return [ hood[i-1], hood[i+1] ];
+function getMatrixNeighbors(){
+//used for getting irregular neighbor hood neighbors
+}
+
+function getNeighbors(id, nhood){
+    if(Array.isArray(nhood)){//in the case of a junction
+        var result = [];
+        for(let hood of nhood){
+            let arr = getTwoNeighbors(id,mockedNeighbors[hood]);
+            Array.prototype.push.apply(result, arr);
         }
+        return result;
+    }else{ //linear or circular
+        let arr = getTwoNeighbors(id, mockedNeighbors[nhood]);
+        return arr;
     }
+}
+
+function getTwoNeighbors(id, hood){
+    if(hood.map.length<2){
+        return [];
+    }
+    switch (hood.type) {
+        case "linear":
+            for (var i = 0; i < hood.map.length; i++) {
+                if (id === hood.map[i]) {
+                    if (i === 0) //first one, return second as neighbor
+                        return [hood.map[1]];
+                    else if (i === hood.map.length - 1) //last one, return the second to the last as neighbor 
+                        return [hood.map[hood.map.length - 2]];
+                    //Otherwise, return the neighboring two
+                    return [hood.map[i - 1], hood.map[i + 1]];
+                }
+            }
+            break;
+
+        case "circular":
+            for (var i = 0; i < hood.map.length; i++) {
+                if (id === hood.map[i]) {
+                    if (i === 0) //first one, return last and second as neighbor
+                        return [hood.map[1], hood.map[hood.map.length-1]];
+                    else if (i === hood.map.length - 1) //last one, return the second to the last and first as neighbor 
+                        return [hood.map[hood.map.length - 2], hood.map[0]];
+                    //Otherwise, return the neighboring two
+                    return [hood.map[i - 1], hood.map[i + 1]];
+                }
+            }
+            break;
+
+        case "irregular":
+
+            break;
+    }
+    
+    
 }
 
 // Should use superagent to mock when we have time
@@ -67,7 +108,7 @@ export const getPanoCoordById = (id) => Promise.resolve({ data: { data: getDataF
 export const getAllPanoIdAndCoord = () => Promise.resolve({ data: { data: mockedPanos } })
 export const getPanoAllAttrById = (id) => Promise.resolve({ data: { data: getDataFromJSONArray(mockedPanos,[], id) } })
 export const getPanoFileNameById = (id) => Promise.resolve({ data: { data:  getDataFromJSONArray(mockedPanos,["filename"], id) } })
-export const getNeighborsById = (id, neighborhood) => Promise.resolve({ data: { data: getTwoNeighbors(id, neighborhood) } })
+export const getNeighborsById = (id, neighborhood) => Promise.resolve({ data: { data: getNeighbors(id, neighborhood) } })
 
 const apis = {
     //insertPano,

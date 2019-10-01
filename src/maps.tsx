@@ -123,7 +123,7 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 				ref={(this.props as any).onMapMounted}
 				google={(this.props as any).google}
 				zoom={17}
-				initialCenter={{ lat: 42.36, lng: -71.053 }}
+				initialCenter={{ lat: 42.459, lng: -71.35 }}
 				bounds={this.bounds}
 			>
 				{this.addMarkers()}

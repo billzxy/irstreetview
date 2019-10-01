@@ -189,7 +189,8 @@ class Pano extends Component<PanoProps, PanoState> {
 		let cone = new Arrow();
 		var conemesh = useRef();
 		var conemesh1 = useRef();
-		var n0, n1;
+		var conemesh2 = useRef();
+		var n0, n1, n2;
 
 		// Mouse drag rotation controls
 		var mouseDown = false,
@@ -241,7 +242,7 @@ class Pano extends Component<PanoProps, PanoState> {
         }
         
 		function rotateScene(deltaX) {
-            console.log(camera.rotation.y);
+            //console.log(camera.rotation.y);
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
 		}
@@ -283,7 +284,7 @@ class Pano extends Component<PanoProps, PanoState> {
 
 		var animateTransition = id => {
             //Set up parameters for TWEEN animations
-			const depth = 15.5;
+			const depth = 17;
 			const resFov = 75;
 			const camAt = (this.neighbors.get(id).bearing * Math.PI) / 180;
 			var endAt = (-this.neighbors.get(id).bearing * Math.PI) / 180;
@@ -429,6 +430,8 @@ class Pano extends Component<PanoProps, PanoState> {
 			n0 = this.neighbors.get(iter.next().value);
 			let cone0 = conemesh.current as any;
 			let cone1 = conemesh1.current as any;
+			let cone2 = conemesh2.current as any;
+			console.log(this.currLoc.id);
 			//position
 			cone0.position.z = -Math.cos(n0.bearing * Math.PI / 180);
 			cone0.position.x = Math.sin(n0.bearing * Math.PI / 180);
@@ -436,6 +439,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			cone0.rotation.x = -1.5708;
 			cone0.rotation.z = (-n0.bearing) * Math.PI / 180;
 			cone1.visible = false;
+			cone2.visible = false;
 			if(this.neighbors.size>1){
 				n1 = this.neighbors.get(iter.next().value);
 				cone1.visible = true;
@@ -446,8 +450,18 @@ class Pano extends Component<PanoProps, PanoState> {
 				cone1.rotation.x = -1.5708;
 				cone1.rotation.z = (-n1.bearing) * Math.PI / 180;
 			}
+			if(this.neighbors.size===3){
+				n2 = this.neighbors.get(iter.next().value);
+				cone2.visible = true;
+				//position
+				cone2.position.z = -Math.cos(n2.bearing * Math.PI / 180);
+				cone2.position.x = Math.sin(n2.bearing * Math.PI / 180);
+				//rotation
+				cone2.rotation.x = -1.5708;
+				cone2.rotation.z = (-n2.bearing) * Math.PI / 180;
+			}
 		}
-        if(conemesh.current&&conemesh1.current){
+        if(conemesh.current&&conemesh1.current&&conemesh2.current){
 			RenderArrows();
         }
 		var coneGroup = useRef();
@@ -508,7 +522,7 @@ class Pano extends Component<PanoProps, PanoState> {
 						ref={conemesh}
 						geometry={cone.geometry}
 					>
-						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
+						<meshBasicMaterial attach="material" color="red" opacity={0.5} transparent={true}/>
 					</mesh>
 					<mesh //Second Arrow
 						onClick={() => {
@@ -519,7 +533,18 @@ class Pano extends Component<PanoProps, PanoState> {
                         ref={conemesh1}
                         geometry={cone.geometry}
                     >
-                        <meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
+                        <meshBasicMaterial attach="material" color="green" opacity={0.5} transparent={true}/>
+                    </mesh>
+					<mesh //Third Arrow
+						onClick={() => {
+							transitionToScene(n2.location.id);
+						}}
+						onPointerOver={e => {(e.object as any).material.opacity=0.7;}}
+						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
+                        ref={conemesh2}
+                        geometry={cone.geometry}
+                    >
+                        <meshBasicMaterial attach="material" color="blue" opacity={0.5} transparent={true}/>
                     </mesh>
                     {/*<mesh //Test mesh
                         onClick={() => fadeTexture()}

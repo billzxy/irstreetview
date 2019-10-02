@@ -37,7 +37,7 @@ export interface MapContainerState {
 	coords?: Coordinate[];
 }
 
-export interface MapContainerProps extends RouteComponentProps {}
+export interface MapContainerProps extends RouteComponentProps<{ lng?: string, lat?: string}> {}
 
 class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	constructor(props) {
@@ -59,7 +59,6 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 						lng: data[i].coord.lng
 					});
 				}
-				//console.log(data);
 				this.setState({
 					coords: coordArr,
 					showComp: true
@@ -90,7 +89,6 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 
 	addMarkers() {
 		this.setBounds();
-
 		//let map = new Map(this.refs.map,);
 		//(this.props as any).google.maps.fitBounds(this.bounds);
 		return (this.state as any).coords.map((coord, index) => {
@@ -123,6 +121,7 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 				ref={(this.props as any).onMapMounted}
 				google={(this.props as any).google}
 				zoom={18}
+				center={{ lat: this.props.match.params.lat, lng: this.props.match.params.lng }}
 				initialCenter={{ lat: 42.4595, lng: -71.353 }}
 				bounds={this.bounds}
 			>

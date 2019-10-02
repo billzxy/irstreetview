@@ -520,7 +520,7 @@ class Pano extends Component<PanoProps, PanoState> {
 						ref={conemesh}
 						geometry={cone.geometry}
 					>
-						<meshBasicMaterial attach="material" color="red" opacity={0.5} transparent={true}/>
+						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
 					</mesh>
 					<mesh //Second Arrow
 						onClick={() => {
@@ -531,7 +531,7 @@ class Pano extends Component<PanoProps, PanoState> {
                         ref={conemesh1}
                         geometry={cone.geometry}
                     >
-                        <meshBasicMaterial attach="material" color="green" opacity={0.5} transparent={true}/>
+                        <meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
                     </mesh>
 					<mesh //Third Arrow
 						onClick={() => {
@@ -542,7 +542,7 @@ class Pano extends Component<PanoProps, PanoState> {
                         ref={conemesh2}
                         geometry={cone.geometry}
                     >
-                        <meshBasicMaterial attach="material" color="blue" opacity={0.5} transparent={true}/>
+                        <meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
                     </mesh>
                     {/*<mesh //Test mesh
                         onClick={() => fadeTexture()}

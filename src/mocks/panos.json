@@ -72,7 +72,7 @@
     {
         "id": "20190925112242",
         "filename": "pano-20190925112242-mx.png",
-        "calibration": -2.152,
+        "calibration": -2.252,
         "neighborhood": "cab",
         "coord": {
             "lat": 42.45956467,
@@ -92,7 +92,7 @@
     {
         "id": "20190925112410",
         "filename": "pano-20190925112410-mx.png",
-        "calibration": -2.544,
+        "calibration": -2.444,
         "neighborhood": "caa",
         "coord": {
             "lat": 42.45966985,
@@ -102,8 +102,8 @@
     {
         "id": "20190925111418",
         "filename": "pano-20190925111418-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -2.87,
+        "neighborhood": "cdt",
         "coord": {
             "lat": 42.45969867,
             "lng": -71.35140942
@@ -112,8 +112,8 @@
     {
         "id": "20190925112757",
         "filename": "pano-20190925112757-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -2.17,
+        "neighborhood": "caa",
         "coord": {
             "lat": 42.45996776,
             "lng": -71.35447809
@@ -122,8 +122,8 @@
     {
         "id": "20190925110216",
         "filename": "pano-20190925110216-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -1.70,
+        "neighborhood": "cdt",
         "coord": {
             "lat": 42.45950405,
             "lng": -71.35144528
@@ -142,8 +142,8 @@
     {
         "id": "20190925113346",
         "filename": "pano-20190925113346-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -2.14,
+        "neighborhood": "caa",
         "coord": {
             "lat": 42.45954963,
             "lng": -71.354371
@@ -152,8 +152,8 @@
     {
         "id": "20190925110449",
         "filename": "pano-20190925110449-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -1.35,
+        "neighborhood": "cdt",
         "coord": {
             "lat": 42.45962005,
             "lng": -71.35099675
@@ -162,8 +162,8 @@
     {
         "id": "20190925112944",
         "filename": "pano-20190925112944-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -2.15,
+        "neighborhood": "caa",
         "coord": {
             "lat": 42.45980487,
             "lng": -71.35493824
@@ -172,8 +172,8 @@
     {
         "id": "20190925111251",
         "filename": "pano-20190925111251-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -1.82,
+        "neighborhood": "cdt",
         "coord": {
             "lat": 42.45976744,
             "lng": -71.35109601
@@ -182,8 +182,8 @@
     {
         "id": "20190925111017",
         "filename": "pano-20190925111017-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -3.38,
+        "neighborhood": "cdt",
         "coord": {
             "lat": 42.45994194,
             "lng": -71.35046685
@@ -192,8 +192,8 @@
     {
         "id": "20190925112929",
         "filename": "pano-20190925112929-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -2.77,
+        "neighborhood": "caa",
         "coord": {
             "lat": 42.45967437,
             "lng": -71.35489279
@@ -202,8 +202,8 @@
     {
         "id": "20190925110659",
         "filename": "pano-20190925110659-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -2.86,
+        "neighborhood": "cdt",
         "coord": {
             "lat": 42.45980818,
             "lng": -71.35042955
@@ -212,8 +212,8 @@
     {
         "id": "20190925112754",
         "filename": "pano-20190925112754-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -3.01,
+        "neighborhood": "caa",
         "coord": {
             "lat": 42.4598957,
             "lng": -71.35475797
@@ -222,8 +222,8 @@
     {
         "id": "20190925112418",
         "filename": "pano-20190925112418-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -2.94,
+        "neighborhood": "caa",
         "coord": {
             "lat": 42.45977151,
             "lng": -71.35404583
@@ -242,8 +242,8 @@
     {
         "id": "20190925111628",
         "filename": "pano-20190925111628-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -3.05,
+        "neighborhood": "cdt",
         "coord": {
             "lat": 42.45958235,
             "lng": -71.35173774
@@ -252,8 +252,8 @@
     {
         "id": "20190925113109",
         "filename": "pano-20190925113109-mx.png",
-        "calibration": 0.0,
-        "neighborhood": "",
+        "calibration": -2.95,
+        "neighborhood": "caa",
         "coord": {
             "lat": 42.45951864,
             "lng": -71.35461781

@@ -8,7 +8,6 @@ import "./style/pano.css";
 import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
 import Spinner from "./components/spinner";
-import { Triangle } from "three";
 //import OrbitControls from 'three-orbitcontrols'
 
 const TWEEN = require("@tweenjs/tween.js");
@@ -242,7 +241,6 @@ class Pano extends Component<PanoProps, PanoState> {
         }
         
 		function rotateScene(deltaX) {
-            //console.log(camera.rotation.y);
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
 		}

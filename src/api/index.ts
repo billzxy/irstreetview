@@ -95,8 +95,7 @@ function getTwoNeighbors(id, hood){
             break;
 
         case "irregular":
-
-            break;
+            return hood.map[id];
     }
     
     

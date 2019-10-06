@@ -1,10 +1,27 @@
-.Pano-canvas {
+.Pano-container {
 	background-color: white;
 	height: calc(100vh - 64px - 48px);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
+}
+
+.Pano-canvas {
+	z-index: 0;
+	width: calc(100vw - 48px);
+	height: calc(100vh - 64px - 48px);
+}
+
+.Minimap {
+	z-index: 1;
+	position: absolute;
+	width: 200px;
+	height: 100px;
+	left: 40px;
+	bottom: 40px;
+	border: 2px solid black;
+  	border-radius: 3px;
 }
 
 .spinner-container {

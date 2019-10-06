@@ -2,9 +2,11 @@ import React, { Component, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useThree, useRender } from "react-three-fiber";
 import { withRouter, RouteComponentProps } from "react-router-dom";
-import SVGLoader from "three-svg-loader";
+//import SVGLoader from "three-svg-loader";
+import { disableBodyScroll, enableBodyScroll, clearAllBodyScrollLocks } from 'body-scroll-lock';
 
 import "./style/pano.css";
+import Minimap from "./minimap"
 import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
 import Spinner from "./components/spinner";
@@ -38,10 +40,11 @@ class Pano extends Component<PanoProps, PanoState> {
 	
 	get panoId() {
 		// @ts-ignore
-		return this.props.match.params.id || "20190724151553";
+		return this.props.match.params.id || "20190724143833";
 	}
 
 	componentDidMount() {
+		disableBodyScroll(document.querySelector('#interface'));
 		var setCurrLocAndNeighbors = async () => {
 			//setCurrLoc
 			this.currLoc = new Location(this.panoId);
@@ -236,8 +239,10 @@ class Pano extends Component<PanoProps, PanoState> {
 
 		//Mouse wheel rotation control
 		function onScroll(event) {
-			var deltaY = event.wheelDeltaY / 3;
-			rotateScene(deltaY);
+			if(event.path[0]===canvas){
+				var deltaY = event.wheelDeltaY / 3;
+				rotateScene(deltaY);
+			}
         }
         
 		function rotateScene(deltaX) {
@@ -247,13 +252,13 @@ class Pano extends Component<PanoProps, PanoState> {
 		
 		function onWindowResize(){
 			gl.setSize( canvas.clientWidth, canvas.clientHeight );
-			(camera as any).aspect = window.innerWidth / window.innerHeight;
+			(camera as any).aspect = canvas.clientWidth / canvas.clientHeight;
 			(camera as any).updateProjectionMatrix();
 		}
 		canvas.addEventListener("mousemove", e => onMouseMove(e), false);
 		canvas.addEventListener("mousedown", e => onMouseDown(e), false);
 		canvas.addEventListener("mouseup", e => onMouseUp(e), false);
-		window.addEventListener("mousewheel", e => onScroll(e),false);
+		canvas.addEventListener("mousewheel", e => onScroll(e),false);
 		canvas.addEventListener("touchmove", e => onTouchMove(e), false);
 		canvas.addEventListener("touchstart", e => onTouchStart(e), false);
 		window.addEventListener( 'resize', onWindowResize, false );
@@ -335,8 +340,6 @@ class Pano extends Component<PanoProps, PanoState> {
 			tweenZoom.onComplete(async () => {
                 //reset camera zoom and pos
                 camera.position.set(0,0,0);
-				//(camera as any).position.z = 0;
-				//(camera as any).position.x = 0;
 				(camera as any).fov = 40;
                 (camera as any).updateProjectionMatrix();
                 //When animations are completed, textures are swapped
@@ -588,10 +591,15 @@ class Pano extends Component<PanoProps, PanoState> {
 				<Spinner width={100} height={100} />
 			</div>
 		) : (
-			<div className="Pano-canvas">
-				<Canvas>
-					<this.RenderPano />
-				</Canvas>
+			<div className="Pano-container">
+				<div className="Minimap" >
+					<Minimap />
+				</div>
+				<div className="Pano-canvas">
+					<Canvas>
+						<this.RenderPano />
+					</Canvas>
+				</div>
 			</div>
 		);
 	}

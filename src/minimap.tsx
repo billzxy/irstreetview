@@ -27,13 +27,24 @@ const Container = styled.div`
 	}
 `;
 
-const regions = {
-	"boston":{
-		lat:42.36, lng:-71.053
-	},
-	"concord":{
-		lat: 42.45955, lng: -71.3525
-	}
+var minimapElement;
+var mapHandlerInit = () => {
+	minimapElement = (document.getElementsByClassName('Minimap') as HTMLCollectionOf<HTMLElement>)[0];
+	//console.log(minimapElement[0]);
+	minimapElement.addEventListener("mouseover", e => minimapZoomIn(e), false);
+	minimapElement.addEventListener("mouseout", e => minimapZoomOut(e), false);
+}
+function minimapZoomIn(e){
+	e.preventDefault();
+	console.log("zoom in")
+	minimapElement.style.width = "250";
+	minimapElement.style.height = "200";
+}
+
+function minimapZoomOut(e){
+	e.preventDefault();
+	minimapElement.style.width = "200";
+	minimapElement.style.height = "100";
 }
 
 export interface Coordinate {
@@ -46,7 +57,7 @@ export interface MapContainerState {
 	coords?: Coordinate[];
 }
 
-export interface MapContainerProps extends RouteComponentProps<{ region?: string} > {}
+export interface MapContainerProps extends RouteComponentProps<{ lng?: string, lat?: string}> {}
 
 class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	constructor(props) {
@@ -129,10 +140,11 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 			<StyledMap
 				ref={(this.props as any).onMapMounted}
 				google={(this.props as any).google}
-				zoom={18}
-				center={regions[this.props.match.params.region]}
-				initialCenter={{ lat: 42.45955, lng: -71.3525 }}
+				zoom={16}
+				//center={{ lat: this.props.match.params.lat, lng: this.props.match.params.lng }}
+				initialCenter={{ lat: 42.4595, lng: -71.353 }}
 				bounds={this.bounds}
+				onReady={mapHandlerInit}
 			>
 				{this.addMarkers()}
 			</StyledMap>
@@ -140,16 +152,12 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	}
 }
 
-const EnhancedMap = GoogleApiWrapper({
+const Minimap = GoogleApiWrapper({
 	apiKey: `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
 })(withRouter(MapContainer));
 
-// google-maps-react is making an higher-order-component
-// in a stupid way, as there is no way for us to change
-// the container tag (always div), and the container does not
-// accept className prop, which makes it hard for us to style
 export default props => (
 	<Container>
-		<EnhancedMap {...props} />
+		<Minimap {...props} />
 	</Container>
 );

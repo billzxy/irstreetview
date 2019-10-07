@@ -3,14 +3,12 @@ import ReactDOM from "react-dom";
 import { Map, GoogleApiWrapper, Marker } from "google-maps-react";
 import { withRouter, RouteComponentProps } from "react-router-dom";
 import styled from "styled-components";
+import { observable } from "mobx";
+import { observer } from "mobx-react";
 
 import api from "./api/index";
+import { type } from "os";
 
-// I believe there is a bug of google-maps-react
-// as it does not respect the custom style object you pass
-// in. So we have to use important for now
-// TODO:
-// look for better map candidate
 const StyledMap = styled(Map)`
 	width: 100% !important;
 	height: 100% !important;
@@ -27,13 +25,23 @@ const Container = styled.div`
 	}
 `;
 
-const regions = {
-	"boston":{
-		lat:42.36, lng:-71.053
-	},
-	"concord":{
-		lat: 42.45955, lng: -71.3525
-	}
+var minimapElement;
+var mapHandlerInit = () => {
+	minimapElement = (document.getElementsByClassName('Minimap') as HTMLCollectionOf<HTMLElement>)[0];
+	//console.log(minimapElement[0]);
+	minimapElement.addEventListener("mouseover", e => minimapZoomIn(e), false);
+	minimapElement.addEventListener("mouseout", e => minimapZoomOut(e), false);
+}
+function minimapZoomIn(e){
+	e.preventDefault();
+	minimapElement.style.width = "250px";
+	minimapElement.style.height = "200px";
+}
+
+function minimapZoomOut(e){
+	e.preventDefault();
+	minimapElement.style.width = "200px";
+	minimapElement.style.height = "100px";
 }
 
 export interface Coordinate {
@@ -44,18 +52,50 @@ export interface Coordinate {
 export interface MapContainerState {
 	showComp: boolean;
 	coords?: Coordinate[];
+	mapStore?: MapStore;
 }
 
-export interface MapContainerProps extends RouteComponentProps<{ region?: string} > {}
+type center = {
+	lng: string,
+	lat: string,
+	bearing: string
+}
 
+export interface MapContainerProps extends RouteComponentProps<{MapStore}> {}
+
+export class MapStore {
+	@observable lng:number;
+	@observable lat:number;
+	@observable bearing:number;
+
+	constructor(lat, lng, cameraY){
+		this.lng = lng;
+		this.lat = lat;
+		this.bearing = this.cameraYtoAbsRadian( cameraY );
+	}
+
+	updateValues(lat, lng, cameraY){
+		this.lng = lng;
+		this.lat = lat;
+		this.bearing = this.cameraYtoAbsRadian( cameraY );
+	}
+
+	cameraYtoAbsRadian(cameraY){
+		return cameraY
+	}
+} 
+
+
+@observer
 class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	constructor(props) {
 		super(props);
 		this.state = {
-			showComp: false
+			showComp: false,
+			mapStore: (this.props as any).store
 		};
 	}
-
+	
 	componentDidMount() {
 		var getAllPanoCoords = async () => {
 			await api.getAllPanoIdAndCoord().then(result => {
@@ -109,7 +149,6 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 						lng: coord.lng
 					}}
 					onClick={e => {
-						this.showComponent(false);
 						return this.gotoPano(e.lid);
 					}}
 					key={coord.id}
@@ -117,39 +156,41 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 			);
 		});
     }
-    
+	
 	gotoPano(id) {
 		// @ts-ignore
 		this.props.history.push(`/viewPano/${id}`);
 	}
 
 	render() {
-		const { showComp } = this.state;
+		const { showComp, mapStore } = this.state;
+
 		return showComp ? (
 			<StyledMap
 				ref={(this.props as any).onMapMounted}
 				google={(this.props as any).google}
-				zoom={18}
-				center={regions[this.props.match.params.region]}
-				initialCenter={{ lat: 42.45955, lng: -71.3525 }}
+				zoom={16}
+				center={{ lat: mapStore.lat, lng: mapStore.lng }}
+				initialCenter={{ lat: mapStore.lat, lng: mapStore.lng}}
 				bounds={this.bounds}
+				onReady={mapHandlerInit}
+				streetViewControl={false}
+				fullscreenControl={false}
+				mapTypeControl={false}
+				rotateControl={false}
 			>
-				{this.addMarkers()}
+		{ this.addMarkers() }
 			</StyledMap>
 		) : null;
 	}
 }
 
-const EnhancedMap = GoogleApiWrapper({
+const Minimap = GoogleApiWrapper({
 	apiKey: `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
 })(withRouter(MapContainer));
 
-// google-maps-react is making an higher-order-component
-// in a stupid way, as there is no way for us to change
-// the container tag (always div), and the container does not
-// accept className prop, which makes it hard for us to style
 export default props => (
 	<Container>
-		<EnhancedMap {...props} />
+		<Minimap {...props} />
 	</Container>
 );

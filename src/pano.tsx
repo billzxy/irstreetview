@@ -2,17 +2,21 @@ import React, { Component, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useThree, useRender } from "react-three-fiber";
 import { withRouter, RouteComponentProps } from "react-router-dom";
-import SVGLoader from "three-svg-loader";
+//import SVGLoader from "three-svg-loader";
+import { disableBodyScroll, enableBodyScroll, clearAllBodyScrollLocks } from 'body-scroll-lock';
 
 import "./style/pano.css";
+import Minimap, {MapStore} from "./minimap"
 import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
 import Spinner from "./components/spinner";
+import { isFor } from "@babel/types";
+import { observable } from "mobx";
 //import OrbitControls from 'three-orbitcontrols'
 
 const TWEEN = require("@tweenjs/tween.js");
 
-interface PanoProps extends RouteComponentProps<{ id?: string }> {
+interface PanoProps extends RouteComponentProps<{ id?: string, position? }> {
 	lid: string;
 }
 
@@ -27,6 +31,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	//Members
 	currLoc: Location;
 	neighbors: Map<string, NeighborType>;
+	mapStore;
 
 	constructor(props) {
 		super(props);
@@ -38,10 +43,12 @@ class Pano extends Component<PanoProps, PanoState> {
 	
 	get panoId() {
 		// @ts-ignore
-		return this.props.match.params.id || "20190724151553";
+		return this.props.match.params.id || "20190724143833";
 	}
 
 	componentDidMount() {
+		disableBodyScroll(document.querySelector('#interface'));
+		console.log("CompDidMount")
 		var setCurrLocAndNeighbors = async () => {
 			//setCurrLoc
 			this.currLoc = new Location(this.panoId);
@@ -99,6 +106,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		this.texture = this.loader.load(
 			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 			() => {
+				this.mapStore = new MapStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0);
 				this.setState({ isLoading: false });
 			},
 			undefined,
@@ -119,6 +127,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		//this.cylindermesh.position.y = 0
         this.cylindermesh.rotation.y = this.currLoc.calibration;
 	}
+	
 
 	/*
 	InitNeighborPins() {
@@ -236,8 +245,10 @@ class Pano extends Component<PanoProps, PanoState> {
 
 		//Mouse wheel rotation control
 		function onScroll(event) {
-			var deltaY = event.wheelDeltaY / 3;
-			rotateScene(deltaY);
+			if(event.path[0]===canvas){
+				var deltaY = event.wheelDeltaY / 3;
+				rotateScene(deltaY);
+			}
         }
         
 		function rotateScene(deltaX) {
@@ -247,18 +258,18 @@ class Pano extends Component<PanoProps, PanoState> {
 		
 		function onWindowResize(){
 			gl.setSize( canvas.clientWidth, canvas.clientHeight );
-			(camera as any).aspect = window.innerWidth / window.innerHeight;
+			(camera as any).aspect = canvas.clientWidth / canvas.clientHeight;
 			(camera as any).updateProjectionMatrix();
 		}
 		canvas.addEventListener("mousemove", e => onMouseMove(e), false);
 		canvas.addEventListener("mousedown", e => onMouseDown(e), false);
 		canvas.addEventListener("mouseup", e => onMouseUp(e), false);
-		window.addEventListener("mousewheel", e => onScroll(e),false);
+		canvas.addEventListener("mousewheel", e => onScroll(e),false);
 		canvas.addEventListener("touchmove", e => onTouchMove(e), false);
 		canvas.addEventListener("touchstart", e => onTouchStart(e), false);
 		window.addEventListener( 'resize', onWindowResize, false );
         
-        var fadeTexture = () => {
+        var animateTeleportationTextureFade = () => {
             var fadeBegin = {
 				at: this.cylindermaterial.opacity
 			};
@@ -335,8 +346,6 @@ class Pano extends Component<PanoProps, PanoState> {
 			tweenZoom.onComplete(async () => {
                 //reset camera zoom and pos
                 camera.position.set(0,0,0);
-				//(camera as any).position.z = 0;
-				//(camera as any).position.x = 0;
 				(camera as any).fov = 40;
                 (camera as any).updateProjectionMatrix();
                 //When animations are completed, textures are swapped
@@ -362,6 +371,34 @@ class Pano extends Component<PanoProps, PanoState> {
         scene.add(this.cylindermesh);
 		//RenderCompass();
 
+		var teleportToScene = async (id) => {
+			this.currLoc = new Location(id);
+			this.texture = this.loader.load(
+				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
+				() => {//onComplete
+                    this.tempcylindermaterial = new THREE.MeshBasicMaterial({
+                        map: this.texture,
+                        side: THREE.DoubleSide
+                    });
+                    this.tempcylindermesh = new THREE.Mesh(
+                        this.tempcylindergeometry,
+                        this.tempcylindermaterial
+                    );
+                    this.tempcylindergeometry.scale(-1, 1, 1);
+                    this.tempcylindermesh.rotation.y = this.currLoc.calibration;
+                    scene.add(this.tempcylindermesh);
+					animateTeleportationTextureFade();
+					this.mapStore.lat = this.currLoc.coord.lat; 
+					this.mapStore.lng = this.currLoc.coord.lng;
+					this.mapStore.bearing = this.currLoc.cameraY;
+				},
+				undefined,
+				err => {
+					console.error(err);
+				}
+			);
+		}
+
 		var transitionToScene = async (id) => {
 			this.currLoc = this.neighbors.get(id).location;
 			//await this.currLoc.setAllAttr();
@@ -380,6 +417,9 @@ class Pano extends Component<PanoProps, PanoState> {
                     this.tempcylindermesh.rotation.y = this.currLoc.calibration;
                     scene.add(this.tempcylindermesh);
 					animateTransition(id);
+					this.mapStore.lat = this.currLoc.coord.lat; 
+					this.mapStore.lng = this.currLoc.coord.lng;
+					this.mapStore.bearing = this.currLoc.cameraY;
 				},
 				undefined,
 				err => {
@@ -422,6 +462,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		}
 		RenderCompass();
 		*/
+
 		var RenderArrows = () => {
 			var iter = this.neighbors.keys();
 			//iter.next();
@@ -583,18 +624,26 @@ class Pano extends Component<PanoProps, PanoState> {
 	//TODO: change the pano window render size
 	render() {
 		const { isLoading } = this.state;
+		
+
 		return isLoading ? (
 			<div className={"spinner-container"}>
 				<Spinner width={100} height={100} />
 			</div>
 		) : (
-			<div className="Pano-canvas">
-				<Canvas>
-					<this.RenderPano />
-				</Canvas>
+			<div className="Pano-container">
+				<div className="Pano-canvas">
+					<Canvas>
+						<this.RenderPano />
+					</Canvas>
+				</div>
+				<div className="Minimap">
+					<Minimap store={this.mapStore}/>
+				</div>
 			</div>
 		);
 	}
 }
 
 export default withRouter(Pano);
+

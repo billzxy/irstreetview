@@ -15,16 +15,12 @@ import "./style/App.css";
 
 const routes = [
 	{
-		path: "/maps",
-		title: "Boston",
-		lat: 42.36,
-		lng: -71.053
+		path: "/maps/boston",
+		title: "Boston"
 	},
 	{
-		path: "/maps",
-		title: "Concord",
-		lat: 42.45955,
-		lng: -71.3525
+		path: "/maps/concord",
+		title: "Concord"
 	},
 	{
 		path: "/viewPano",
@@ -39,8 +35,8 @@ export const Interface: React.FC = () => {
 				<Header>
 					{routes.map(r => (
 						<NavLink
-							to={r.path+"/"+r.lat+"/"+r.lng}
-							//key={r.path}
+							to={r.path}
+							key={r.path}
 							activeClassName="ir-nav-item__active"
 							className="ir-nav-item"
 						>
@@ -50,10 +46,10 @@ export const Interface: React.FC = () => {
 				</Header>
 				<Content>
 					<Switch>
-						<Route path="/maps/:lat/:lng" component={GMap} />}/>
+						<Route path="/maps/:region" component={GMap} />}/>
 						<Route exact={true} path="/viewPano/:id" component={Pano} />
 						<Route path="/viewPano" component={Pano} />
-						<Redirect exact from="/" to="maps/42.45955/-71.3525" />
+						<Redirect exact from="/" to="maps/concord" />
 					</Switch>
 				</Content>
 			</Container>

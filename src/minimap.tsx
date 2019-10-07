@@ -3,14 +3,12 @@ import ReactDOM from "react-dom";
 import { Map, GoogleApiWrapper, Marker } from "google-maps-react";
 import { withRouter, RouteComponentProps } from "react-router-dom";
 import styled from "styled-components";
+import { observable } from "mobx";
+import { observer } from "mobx-react";
 
 import api from "./api/index";
+import { type } from "os";
 
-// I believe there is a bug of google-maps-react
-// as it does not respect the custom style object you pass
-// in. So we have to use important for now
-// TODO:
-// look for better map candidate
 const StyledMap = styled(Map)`
 	width: 100% !important;
 	height: 100% !important;
@@ -36,15 +34,14 @@ var mapHandlerInit = () => {
 }
 function minimapZoomIn(e){
 	e.preventDefault();
-	console.log("zoom in")
-	minimapElement.style.width = "250";
-	minimapElement.style.height = "200";
+	minimapElement.style.width = "250px";
+	minimapElement.style.height = "200px";
 }
 
 function minimapZoomOut(e){
 	e.preventDefault();
-	minimapElement.style.width = "200";
-	minimapElement.style.height = "100";
+	minimapElement.style.width = "200px";
+	minimapElement.style.height = "100px";
 }
 
 export interface Coordinate {
@@ -55,18 +52,50 @@ export interface Coordinate {
 export interface MapContainerState {
 	showComp: boolean;
 	coords?: Coordinate[];
+	mapStore?: MapStore;
 }
 
-export interface MapContainerProps extends RouteComponentProps<{ lng?: string, lat?: string}> {}
+type center = {
+	lng: string,
+	lat: string,
+	bearing: string
+}
 
+export interface MapContainerProps extends RouteComponentProps<{MapStore}> {}
+
+export class MapStore {
+	@observable lng:number;
+	@observable lat:number;
+	@observable bearing:number;
+
+	constructor(lat, lng, cameraY){
+		this.lng = lng;
+		this.lat = lat;
+		this.bearing = this.cameraYtoAbsRadian( cameraY );
+	}
+
+	updateValues(lat, lng, cameraY){
+		this.lng = lng;
+		this.lat = lat;
+		this.bearing = this.cameraYtoAbsRadian( cameraY );
+	}
+
+	cameraYtoAbsRadian(cameraY){
+		return cameraY
+	}
+} 
+
+
+@observer
 class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	constructor(props) {
 		super(props);
 		this.state = {
-			showComp: false
+			showComp: false,
+			mapStore: (this.props as any).store
 		};
 	}
-
+	
 	componentDidMount() {
 		var getAllPanoCoords = async () => {
 			await api.getAllPanoIdAndCoord().then(result => {
@@ -120,7 +149,6 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 						lng: coord.lng
 					}}
 					onClick={e => {
-						this.showComponent(false);
 						return this.gotoPano(e.lid);
 					}}
 					key={coord.id}
@@ -128,25 +156,30 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 			);
 		});
     }
-    
+	
 	gotoPano(id) {
 		// @ts-ignore
 		this.props.history.push(`/viewPano/${id}`);
 	}
 
 	render() {
-		const { showComp } = this.state;
+		const { showComp, mapStore } = this.state;
+
 		return showComp ? (
 			<StyledMap
 				ref={(this.props as any).onMapMounted}
 				google={(this.props as any).google}
 				zoom={16}
-				//center={{ lat: this.props.match.params.lat, lng: this.props.match.params.lng }}
-				initialCenter={{ lat: 42.4595, lng: -71.353 }}
+				center={{ lat: mapStore.lat, lng: mapStore.lng }}
+				initialCenter={{ lat: mapStore.lat, lng: mapStore.lng}}
 				bounds={this.bounds}
 				onReady={mapHandlerInit}
+				streetViewControl={false}
+				fullscreenControl={false}
+				mapTypeControl={false}
+				rotateControl={false}
 			>
-				{this.addMarkers()}
+		{ this.addMarkers() }
 			</StyledMap>
 		) : null;
 	}

@@ -6,15 +6,17 @@ import { withRouter, RouteComponentProps } from "react-router-dom";
 import { disableBodyScroll, enableBodyScroll, clearAllBodyScrollLocks } from 'body-scroll-lock';
 
 import "./style/pano.css";
-import Minimap from "./minimap"
+import Minimap, {MapStore} from "./minimap"
 import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
 import Spinner from "./components/spinner";
+import { isFor } from "@babel/types";
+import { observable } from "mobx";
 //import OrbitControls from 'three-orbitcontrols'
 
 const TWEEN = require("@tweenjs/tween.js");
 
-interface PanoProps extends RouteComponentProps<{ id?: string }> {
+interface PanoProps extends RouteComponentProps<{ id?: string, position? }> {
 	lid: string;
 }
 
@@ -29,6 +31,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	//Members
 	currLoc: Location;
 	neighbors: Map<string, NeighborType>;
+	mapStore;
 
 	constructor(props) {
 		super(props);
@@ -45,6 +48,7 @@ class Pano extends Component<PanoProps, PanoState> {
 
 	componentDidMount() {
 		disableBodyScroll(document.querySelector('#interface'));
+		console.log("CompDidMount")
 		var setCurrLocAndNeighbors = async () => {
 			//setCurrLoc
 			this.currLoc = new Location(this.panoId);
@@ -102,6 +106,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		this.texture = this.loader.load(
 			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 			() => {
+				this.mapStore = new MapStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0);
 				this.setState({ isLoading: false });
 			},
 			undefined,
@@ -122,6 +127,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		//this.cylindermesh.position.y = 0
         this.cylindermesh.rotation.y = this.currLoc.calibration;
 	}
+	
 
 	/*
 	InitNeighborPins() {
@@ -263,7 +269,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		canvas.addEventListener("touchstart", e => onTouchStart(e), false);
 		window.addEventListener( 'resize', onWindowResize, false );
         
-        var fadeTexture = () => {
+        var animateTeleportationTextureFade = () => {
             var fadeBegin = {
 				at: this.cylindermaterial.opacity
 			};
@@ -365,6 +371,34 @@ class Pano extends Component<PanoProps, PanoState> {
         scene.add(this.cylindermesh);
 		//RenderCompass();
 
+		var teleportToScene = async (id) => {
+			this.currLoc = new Location(id);
+			this.texture = this.loader.load(
+				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
+				() => {//onComplete
+                    this.tempcylindermaterial = new THREE.MeshBasicMaterial({
+                        map: this.texture,
+                        side: THREE.DoubleSide
+                    });
+                    this.tempcylindermesh = new THREE.Mesh(
+                        this.tempcylindergeometry,
+                        this.tempcylindermaterial
+                    );
+                    this.tempcylindergeometry.scale(-1, 1, 1);
+                    this.tempcylindermesh.rotation.y = this.currLoc.calibration;
+                    scene.add(this.tempcylindermesh);
+					animateTeleportationTextureFade();
+					this.mapStore.lat = this.currLoc.coord.lat; 
+					this.mapStore.lng = this.currLoc.coord.lng;
+					this.mapStore.bearing = this.currLoc.cameraY;
+				},
+				undefined,
+				err => {
+					console.error(err);
+				}
+			);
+		}
+
 		var transitionToScene = async (id) => {
 			this.currLoc = this.neighbors.get(id).location;
 			//await this.currLoc.setAllAttr();
@@ -383,6 +417,9 @@ class Pano extends Component<PanoProps, PanoState> {
                     this.tempcylindermesh.rotation.y = this.currLoc.calibration;
                     scene.add(this.tempcylindermesh);
 					animateTransition(id);
+					this.mapStore.lat = this.currLoc.coord.lat; 
+					this.mapStore.lng = this.currLoc.coord.lng;
+					this.mapStore.bearing = this.currLoc.cameraY;
 				},
 				undefined,
 				err => {
@@ -425,6 +462,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		}
 		RenderCompass();
 		*/
+
 		var RenderArrows = () => {
 			var iter = this.neighbors.keys();
 			//iter.next();
@@ -586,19 +624,21 @@ class Pano extends Component<PanoProps, PanoState> {
 	//TODO: change the pano window render size
 	render() {
 		const { isLoading } = this.state;
+		
+
 		return isLoading ? (
 			<div className={"spinner-container"}>
 				<Spinner width={100} height={100} />
 			</div>
 		) : (
 			<div className="Pano-container">
-				<div className="Minimap" >
-					<Minimap />
-				</div>
 				<div className="Pano-canvas">
 					<Canvas>
 						<this.RenderPano />
 					</Canvas>
+				</div>
+				<div className="Minimap">
+					<Minimap store={this.mapStore}/>
 				</div>
 			</div>
 		);
@@ -606,3 +646,4 @@ class Pano extends Component<PanoProps, PanoState> {
 }
 
 export default withRouter(Pano);
+

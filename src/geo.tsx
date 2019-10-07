@@ -12,6 +12,7 @@ class Location {
     fname: string = "";
     neighborhood: string = "";
     neighborArr
+    cameraY
 
     //Methods
     constructor(id: string) {

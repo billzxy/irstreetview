@@ -164,7 +164,7 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	gotoPano(id) {
 		// @ts-ignore
 		//this.props.history.push(`/viewPano/${id}`);
-		console.log("Update id: "+id);
+		//console.log("Update id: "+id);
 		this.panoStore.id = id;
 	}
 

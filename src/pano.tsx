@@ -10,8 +10,8 @@ import Minimap, {MapStore} from "./minimap"
 import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
 import Spinner from "./components/spinner";
-import { isFor } from "@babel/types";
-import { observable } from "mobx";
+import { observable, autorun, reaction } from "mobx";
+import { observer } from "mobx-react";
 //import OrbitControls from 'three-orbitcontrols'
 
 const TWEEN = require("@tweenjs/tween.js");
@@ -32,6 +32,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	currLoc: Location;
 	neighbors: Map<string, NeighborType>;
 	mapStore;
+	panoStore;
 
 	constructor(props) {
 		super(props);
@@ -48,14 +49,12 @@ class Pano extends Component<PanoProps, PanoState> {
 
 	componentDidMount() {
 		disableBodyScroll(document.querySelector('#interface'));
-		console.log("CompDidMount")
 		var setCurrLocAndNeighbors = async () => {
 			//setCurrLoc
 			this.currLoc = new Location(this.panoId);
 			await this.currLoc.setAllAttr().then(() => {
 				this.loadTexture();
 			});
-
 			//setNeighbors
 			this.neighbors = new Map();
 			this.setNeighbors();
@@ -107,6 +106,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 			() => {
 				this.mapStore = new MapStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0);
+				this.panoStore = new PanoStore(this.currLoc.id);
 				this.setState({ isLoading: false });
 			},
 			undefined,
@@ -283,9 +283,24 @@ class Pano extends Component<PanoProps, PanoState> {
                 //console.log(this.cylindermaterial);
 				this.cylindermaterial.opacity = fadeBegin.at;
 			});
-			crossfade.onComplete(() => {
-                this.cylindermaterial.opacity = 1.0;
+			crossfade.onComplete( async () => {
+				//reset camera zoom and pos
+				camera.rotation.y = 0;
+				(camera as any).fov = 40;
+                (camera as any).updateProjectionMatrix();
+                //When animations are completed, textures are swapped
+                
+                this.cylindermaterial.map = this.texture;
+                this.cylindermesh.rotation.y = this.currLoc.calibration;
                 this.cylindermaterial.transparent = false;
+                this.cylindermaterial.opacity = 1.0;
+
+                scene.remove(this.tempcylindermesh);
+                this.tempcylindermesh.geometry.dispose();
+                this.tempcylindermesh.material.dispose();
+                this.tempcylindermesh = undefined;
+                this.tempcylindergeometry.scale(-1,1,1);
+				await this.setNeighbors().then(RenderArrows);
             });
             this.cylindermaterial.transparent = true;
             crossfade.start();
@@ -372,31 +387,34 @@ class Pano extends Component<PanoProps, PanoState> {
 		//RenderCompass();
 
 		var teleportToScene = async (id) => {
+			console.log("Teleporting to: "+id);
 			this.currLoc = new Location(id);
-			this.texture = this.loader.load(
-				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
-				() => {//onComplete
-                    this.tempcylindermaterial = new THREE.MeshBasicMaterial({
-                        map: this.texture,
-                        side: THREE.DoubleSide
-                    });
-                    this.tempcylindermesh = new THREE.Mesh(
-                        this.tempcylindergeometry,
-                        this.tempcylindermaterial
-                    );
-                    this.tempcylindergeometry.scale(-1, 1, 1);
-                    this.tempcylindermesh.rotation.y = this.currLoc.calibration;
-                    scene.add(this.tempcylindermesh);
-					animateTeleportationTextureFade();
-					this.mapStore.lat = this.currLoc.coord.lat; 
-					this.mapStore.lng = this.currLoc.coord.lng;
-					this.mapStore.bearing = this.currLoc.cameraY;
-				},
-				undefined,
-				err => {
-					console.error(err);
-				}
-			);
+			await this.currLoc.setAllAttr().then(()=>{
+				this.texture = this.loader.load(
+					require(`./assets/viewPano/resource/${this.currLoc.fname}`),
+					() => {//onComplete
+						this.tempcylindermaterial = new THREE.MeshBasicMaterial({
+							map: this.texture,
+							side: THREE.DoubleSide
+						});
+						this.tempcylindermesh = new THREE.Mesh(
+							this.tempcylindergeometry,
+							this.tempcylindermaterial
+						);
+						this.tempcylindergeometry.scale(-1, 1, 1);
+						this.tempcylindermesh.rotation.y = this.currLoc.calibration;
+						scene.add(this.tempcylindermesh);
+						animateTeleportationTextureFade();
+						this.mapStore.lat = this.currLoc.coord.lat; 
+						this.mapStore.lng = this.currLoc.coord.lng;
+						this.mapStore.bearing = this.currLoc.cameraY;
+					},
+					undefined,
+					err => {
+						console.error(err);
+					}
+				);
+			});
 		}
 
 		var transitionToScene = async (id) => {
@@ -525,6 +543,15 @@ class Pano extends Component<PanoProps, PanoState> {
             (testMesh.current as any).geometry.scale(2,2,2);
         }
 
+
+		const panoIdChangeReaction = reaction(
+			() => this.panoStore.id,
+			(id, reaction) => {
+				console.log("Teleport to: "+id);
+				//teleportToScene(newid);
+				//reaction.dispose();
+			}
+		);
 		
 		useRender(() => {
 			TWEEN.update();
@@ -598,7 +625,7 @@ class Pano extends Component<PanoProps, PanoState> {
                     </mesh>*/}
 				</group>
 				<group
-					onClick={() => this.CameraLookNorth(camera)}
+					onClick={() => console.log(this.panoStore.id)}//this.CameraLookNorth(camera)}
 					onPointerOver={e => {setChildrenOpacity(e.object.children, 0.8);}}
 					onPointerOut={e => {setChildrenOpacity(e.object.children, 0.5);}}
 					ref={compassGroup}
@@ -638,10 +665,21 @@ class Pano extends Component<PanoProps, PanoState> {
 					</Canvas>
 				</div>
 				<div className="Minimap">
-					<Minimap store={this.mapStore}/>
+					<Minimap mapStore={this.mapStore} panoStore={this.panoStore}/>
 				</div>
 			</div>
 		);
+	}
+}
+
+export class PanoStore{
+	@observable id:string
+
+	constructor(id){
+		this.id=id;
+	}
+	public updateId(id){
+		this.id=id;
 	}
 }
 

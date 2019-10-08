@@ -6,8 +6,8 @@ import styled from "styled-components";
 import { observable } from "mobx";
 import { observer } from "mobx-react";
 
+import { PanoStore } from "./pano";
 import api from "./api/index";
-import { type } from "os";
 
 const StyledMap = styled(Map)`
 	width: 100% !important;
@@ -88,12 +88,16 @@ export class MapStore {
 
 @observer
 class MapContainer extends Component<MapContainerProps, MapContainerState> {
+	
+	panoStore:PanoStore;
+
 	constructor(props) {
 		super(props);
 		this.state = {
 			showComp: false,
-			mapStore: (this.props as any).store
+			mapStore: (this.props as any).mapStore
 		};
+		this.panoStore = (this.props as any).panoStore;
 	}
 	
 	componentDidMount() {
@@ -159,7 +163,9 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	
 	gotoPano(id) {
 		// @ts-ignore
-		this.props.history.push(`/viewPano/${id}`);
+		//this.props.history.push(`/viewPano/${id}`);
+		//console.log("Update id: "+id);
+		this.panoStore.id = id;
 	}
 
 	render() {

@@ -10,8 +10,8 @@ import Minimap, {MapStore} from "./minimap"
 import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
 import Spinner from "./components/spinner";
-import { isFor } from "@babel/types";
-import { observable } from "mobx";
+import { observable, autorun, reaction } from "mobx";
+import { observer } from "mobx-react";
 //import OrbitControls from 'three-orbitcontrols'
 
 const TWEEN = require("@tweenjs/tween.js");
@@ -31,7 +31,9 @@ class Pano extends Component<PanoProps, PanoState> {
 	//Members
 	currLoc: Location;
 	neighbors: Map<string, NeighborType>;
-	mapStore;
+	mapStore = undefined;
+	panoStore = undefined;
+	panoIdChangeReaction;
 
 	constructor(props) {
 		super(props);
@@ -48,14 +50,12 @@ class Pano extends Component<PanoProps, PanoState> {
 
 	componentDidMount() {
 		disableBodyScroll(document.querySelector('#interface'));
-		console.log("CompDidMount")
 		var setCurrLocAndNeighbors = async () => {
 			//setCurrLoc
 			this.currLoc = new Location(this.panoId);
 			await this.currLoc.setAllAttr().then(() => {
 				this.loadTexture();
 			});
-
 			//setNeighbors
 			this.neighbors = new Map();
 			this.setNeighbors();
@@ -95,18 +95,39 @@ class Pano extends Component<PanoProps, PanoState> {
 	cylindermesh = undefined;
 	texture = undefined;
 	loader = new THREE.TextureLoader();
-    lines = [];
-    
+	lines = [];
+	
     tempcylindergeometry = new THREE.CylinderBufferGeometry(21, 21, 15, 100, 1, true);
 	tempcylindermaterial = undefined;
-    tempcylindermesh = undefined;
+	tempcylindermesh = undefined;
+	threeCamera = undefined;
+	threeScene = undefined;
 
+	cone0:THREE.Mesh;
+	cone1:THREE.Mesh;
+	cone2:THREE.Mesh;
+
+	//Neighbors
+	n0:NeighborType;
+	n1:NeighborType;
+	n2:NeighborType;
+
+	
 
 	loadTexture() {
 		this.texture = this.loader.load(
 			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 			() => {
 				this.mapStore = new MapStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0);
+				this.panoStore = new PanoStore(this.currLoc.id);
+				this.panoIdChangeReaction = reaction(
+					() => this.panoStore.id,
+					(id, reaction) => {
+						//console.log(this.panoStore);
+						this.teleportToScene(id);
+						//reaction.dispose();
+					}
+				);
 				this.setState({ isLoading: false });
 			},
 			undefined,
@@ -170,35 +191,129 @@ class Pano extends Component<PanoProps, PanoState> {
 		tweenRot.start();
 	}
 
+	teleportToScene = async (id) => {
+		//console.log("Teleporting to: "+id);
+		this.currLoc = new Location(id);
+		await this.currLoc.setAllAttr().then(()=>{
+			this.texture = this.loader.load(
+				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
+				() => {//onComplete
+					this.tempcylindermaterial = new THREE.MeshBasicMaterial({
+						map: this.texture,
+						side: THREE.DoubleSide
+					});
+					this.tempcylindermesh = new THREE.Mesh(
+						this.tempcylindergeometry,
+						this.tempcylindermaterial
+					);
+					this.tempcylindergeometry.scale(-1, 1, 1);
+					this.tempcylindermesh.rotation.y = this.currLoc.calibration;
+					this.threeScene.add(this.tempcylindermesh);
+					this.animateTeleportationTextureFade();
+					this.mapStore.lat = this.currLoc.coord.lat; 
+					this.mapStore.lng = this.currLoc.coord.lng;
+					this.mapStore.bearing = this.currLoc.cameraY;
+				},
+				undefined,
+				err => {
+					console.error(err);
+				}
+			);
+		});
+	}
+
+	animateTeleportationTextureFade = () => {
+		var fadeBegin = {
+			at: this.cylindermaterial.opacity
+		};
+		var fadeEnd = {
+			at: 0.1
+		};
+		var crossfade = new TWEEN.Tween(fadeBegin)
+			.to(fadeEnd, 500)
+			.easing(TWEEN.Easing.Quadratic.InOut);
+		crossfade.onUpdate(() => {
+			//console.log(this.cylindermaterial);
+			this.cylindermaterial.opacity = fadeBegin.at;
+		});
+		crossfade.onComplete( async () => {
+			//reset camera zoom and pos
+			this.threeCamera.rotation.y = 0;
+			(this.threeCamera as any).fov = 40;
+			(this.threeCamera as any).updateProjectionMatrix();
+			//When animations are completed, textures are swapped
+			
+			this.cylindermaterial.map = this.texture;
+			this.cylindermesh.rotation.y = this.currLoc.calibration;
+			this.cylindermaterial.transparent = false;
+			this.cylindermaterial.opacity = 1.0;
+
+			this.threeScene.remove(this.tempcylindermesh);
+			this.tempcylindermesh.geometry.dispose();
+			this.tempcylindermesh.material.dispose();
+			this.tempcylindermesh = undefined;
+			this.tempcylindergeometry.scale(-1,1,1);
+			await this.setNeighbors().then(this.RenderArrows);
+		});
+		this.cylindermaterial.transparent = true;
+		crossfade.start();
+	}
+
+	RenderArrows = () => {
+		var iter = this.neighbors.keys();
+		//iter.next();
+		this.n0 = this.neighbors.get(iter.next().value);
+		console.log(this.currLoc.id);
+		//position
+		this.cone0.position.z = -Math.cos(this.n0.bearing * Math.PI / 180);
+		this.cone0.position.x = Math.sin(this.n0.bearing * Math.PI / 180);
+		//rotation
+		this.cone0.rotation.x = -1.5708;
+		this.cone0.rotation.z = (-this.n0.bearing) * Math.PI / 180;
+		this.cone1.visible = false;
+		this.cone2.visible = false;
+		if(this.neighbors.size>1){
+			this.n1 = this.neighbors.get(iter.next().value);
+			this.cone1.visible = true;
+			//position
+			this.cone1.position.z = -Math.cos(this.n1.bearing * Math.PI / 180);
+			this.cone1.position.x = Math.sin(this.n1.bearing * Math.PI / 180);
+			//rotation
+			this.cone1.rotation.x = -1.5708;
+			this.cone1.rotation.z = (-this.n1.bearing) * Math.PI / 180;
+		}
+		if(this.neighbors.size===3){
+			this.n2 = this.neighbors.get(iter.next().value);
+			this.cone2.visible = true;
+			//position
+			this.cone2.position.z = -Math.cos(this.n2.bearing * Math.PI / 180);
+			this.cone2.position.x = Math.sin(this.n2.bearing * Math.PI / 180);
+			//rotation
+			this.cone2.rotation.x = -1.5708;
+			this.cone2.rotation.z = (-this.n2.bearing) * Math.PI / 180;
+		}
+	}
+
 	RenderPano() {
 		var mainCam = useRef();
 		var { gl, camera, canvas, scene } = useThree();
+		this.threeCamera = camera;
+		this.threeScene = scene;
 		(camera as any).fov = 40;
 		//gl.setSize(window.innerWidth, window.innerHeight);
 		gl.setSize(canvas.clientWidth, canvas.clientHeight);
 		
 		camera.position.set(0, 0, 0);
 		camera.lookAt(0, 0, 0);
-		//canvas.width  = canvas.clientWidth;
-		//canvas.height = canvas.clientHeight;
-		//gl.setViewport(0, 0, canvas.clientWidth, canvas.clientHeight);
-		/*var controls = new OrbitControls( camera, gl.domElement );
-		controls.update();
-		controls.touches = {
-			ONE: THREE.TOUCH.ROTATE,
-			TWO: THREE.TOUCH.DOLLY_PAN
-		}
-		controls.mouseButtons = {
-			LEFT: THREE.MOUSE.ROTATE,
-			MIDDLE: THREE.MOUSE.DOLLY,
-			RIGHT: THREE.MOUSE.PAN
-		}*/
 
 		let cone = new Arrow();
 		var conemesh = useRef();
 		var conemesh1 = useRef();
 		var conemesh2 = useRef();
-		var n0, n1, n2;
+
+		this.cone0 = conemesh.current as any;
+		this.cone1 = conemesh1.current as any;
+		this.cone2 = conemesh2.current as any;
 
 		// Mouse drag rotation controls
 		var mouseDown = false,
@@ -268,28 +383,6 @@ class Pano extends Component<PanoProps, PanoState> {
 		canvas.addEventListener("touchmove", e => onTouchMove(e), false);
 		canvas.addEventListener("touchstart", e => onTouchStart(e), false);
 		window.addEventListener( 'resize', onWindowResize, false );
-        
-        var animateTeleportationTextureFade = () => {
-            var fadeBegin = {
-				at: this.cylindermaterial.opacity
-			};
-			var fadeEnd = {
-				at: 0.1
-			};
-			var crossfade = new TWEEN.Tween(fadeBegin)
-				.to(fadeEnd, 500)
-				.easing(TWEEN.Easing.Quadratic.InOut);
-			crossfade.onUpdate(() => {
-                //console.log(this.cylindermaterial);
-				this.cylindermaterial.opacity = fadeBegin.at;
-			});
-			crossfade.onComplete(() => {
-                this.cylindermaterial.opacity = 1.0;
-                this.cylindermaterial.transparent = false;
-            });
-            this.cylindermaterial.transparent = true;
-            crossfade.start();
-        }
 
 		var animateTransition = id => {
             //Set up parameters for TWEEN animations
@@ -360,7 +453,7 @@ class Pano extends Component<PanoProps, PanoState> {
                 this.tempcylindermesh.material.dispose();
                 this.tempcylindermesh = undefined;
                 this.tempcylindergeometry.scale(-1,1,1);
-				await this.setNeighbors().then(RenderArrows);//.then(()=>{this.InitNeighborPins()});
+				await this.setNeighbors().then(this.RenderArrows);//.then(()=>{this.InitNeighborPins()});
 			});
             tweenRot.chain(tweenZoom);
             this.cylindermaterial.transparent = true;
@@ -370,34 +463,6 @@ class Pano extends Component<PanoProps, PanoState> {
         
         scene.add(this.cylindermesh);
 		//RenderCompass();
-
-		var teleportToScene = async (id) => {
-			this.currLoc = new Location(id);
-			this.texture = this.loader.load(
-				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
-				() => {//onComplete
-                    this.tempcylindermaterial = new THREE.MeshBasicMaterial({
-                        map: this.texture,
-                        side: THREE.DoubleSide
-                    });
-                    this.tempcylindermesh = new THREE.Mesh(
-                        this.tempcylindergeometry,
-                        this.tempcylindermaterial
-                    );
-                    this.tempcylindergeometry.scale(-1, 1, 1);
-                    this.tempcylindermesh.rotation.y = this.currLoc.calibration;
-                    scene.add(this.tempcylindermesh);
-					animateTeleportationTextureFade();
-					this.mapStore.lat = this.currLoc.coord.lat; 
-					this.mapStore.lng = this.currLoc.coord.lng;
-					this.mapStore.bearing = this.currLoc.cameraY;
-				},
-				undefined,
-				err => {
-					console.error(err);
-				}
-			);
-		}
 
 		var transitionToScene = async (id) => {
 			this.currLoc = this.neighbors.get(id).location;
@@ -463,45 +528,9 @@ class Pano extends Component<PanoProps, PanoState> {
 		RenderCompass();
 		*/
 
-		var RenderArrows = () => {
-			var iter = this.neighbors.keys();
-			//iter.next();
-			n0 = this.neighbors.get(iter.next().value);
-			let cone0 = conemesh.current as any;
-			let cone1 = conemesh1.current as any;
-			let cone2 = conemesh2.current as any;
-			console.log(this.currLoc.id);
-			//position
-			cone0.position.z = -Math.cos(n0.bearing * Math.PI / 180);
-			cone0.position.x = Math.sin(n0.bearing * Math.PI / 180);
-			//rotation
-			cone0.rotation.x = -1.5708;
-			cone0.rotation.z = (-n0.bearing) * Math.PI / 180;
-			cone1.visible = false;
-			cone2.visible = false;
-			if(this.neighbors.size>1){
-				n1 = this.neighbors.get(iter.next().value);
-				cone1.visible = true;
-				//position
-				cone1.position.z = -Math.cos(n1.bearing * Math.PI / 180);
-				cone1.position.x = Math.sin(n1.bearing * Math.PI / 180);
-				//rotation
-				cone1.rotation.x = -1.5708;
-				cone1.rotation.z = (-n1.bearing) * Math.PI / 180;
-			}
-			if(this.neighbors.size===3){
-				n2 = this.neighbors.get(iter.next().value);
-				cone2.visible = true;
-				//position
-				cone2.position.z = -Math.cos(n2.bearing * Math.PI / 180);
-				cone2.position.x = Math.sin(n2.bearing * Math.PI / 180);
-				//rotation
-				cone2.rotation.x = -1.5708;
-				cone2.rotation.z = (-n2.bearing) * Math.PI / 180;
-			}
-		}
+		
         if(conemesh.current&&conemesh1.current&&conemesh2.current){
-			RenderArrows();
+			this.RenderArrows();
         }
 		var coneGroup = useRef();
 		var compassGroup = useRef();
@@ -524,7 +553,6 @@ class Pano extends Component<PanoProps, PanoState> {
         if(testMesh.current){
             (testMesh.current as any).geometry.scale(2,2,2);
         }
-
 		
 		useRender(() => {
 			TWEEN.update();
@@ -554,7 +582,7 @@ class Pano extends Component<PanoProps, PanoState> {
 				<group ref={coneGroup} /*group of arrows */>
 					<mesh //First Arrow
 						onClick={() => {
-							transitionToScene(n0.location.id); /*this.currLoc.updateCalibration(camera)*/
+							transitionToScene(this.n0.location.id); /*this.currLoc.updateCalibration(camera)*/
 						}}
 						onPointerOver={e => {(e.object as any).material.opacity=0.7;}}
 						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
@@ -565,7 +593,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					</mesh>
 					<mesh //Second Arrow
 						onClick={() => {
-							transitionToScene(n1.location.id);
+							transitionToScene(this.n1.location.id);
 						}}
 						onPointerOver={e => {(e.object as any).material.opacity=0.7;}}
 						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
@@ -576,7 +604,7 @@ class Pano extends Component<PanoProps, PanoState> {
                     </mesh>
 					<mesh //Third Arrow
 						onClick={() => {
-							transitionToScene(n2.location.id);
+							transitionToScene(this.n2.location.id);
 						}}
 						onPointerOver={e => {(e.object as any).material.opacity=0.7;}}
 						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
@@ -598,7 +626,7 @@ class Pano extends Component<PanoProps, PanoState> {
                     </mesh>*/}
 				</group>
 				<group
-					onClick={() => this.CameraLookNorth(camera)}
+					onClick={() => console.log(this.panoStore.id)}//this.CameraLookNorth(camera)}
 					onPointerOver={e => {setChildrenOpacity(e.object.children, 0.8);}}
 					onPointerOut={e => {setChildrenOpacity(e.object.children, 0.5);}}
 					ref={compassGroup}
@@ -638,10 +666,21 @@ class Pano extends Component<PanoProps, PanoState> {
 					</Canvas>
 				</div>
 				<div className="Minimap">
-					<Minimap store={this.mapStore}/>
+					<Minimap mapStore={this.mapStore} panoStore={this.panoStore}/>
 				</div>
 			</div>
 		);
+	}
+}
+
+export class PanoStore{
+	@observable id:string
+
+	constructor(id){
+		this.id=id;
+	}
+	public updateId(id){
+		this.id=id;
 	}
 }
 

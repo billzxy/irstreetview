@@ -3,11 +3,12 @@ import ReactDOM from "react-dom";
 import { Map, GoogleApiWrapper, Marker } from "google-maps-react";
 import { withRouter, RouteComponentProps } from "react-router-dom";
 import styled from "styled-components";
-import { observable } from "mobx";
+import { observable, reaction } from "mobx";
 import { observer } from "mobx-react";
 
 import { PanoStore } from "./pano";
 import api from "./api/index";
+import { debuggerStatement } from "@babel/types";
 
 const StyledMap = styled(Map)`
 	width: 100% !important;
@@ -66,25 +67,36 @@ export interface MapContainerProps extends RouteComponentProps<{MapStore}> {}
 export class MapStore {
 	@observable lng:number;
 	@observable lat:number;
-	@observable bearing:number;
+	//@observable bearing:number;
 	@observable id:string;
+	@observable pmanOffsetY:number;
 
 	constructor(lat, lng, cameraY, id){
 		this.lng = lng;
 		this.lat = lat;
-		this.bearing = this.cameraYtoAbsRadian( cameraY );
+		//this.bearing = this.cameraYtoAbsRadian( cameraY );
 		this.id = id;
+		this.pmanOffsetY = this.setPegmanRotationOffsetYFromCameraY(cameraY);
 	}
 
 	updateValues(lat, lng, cameraY, id){
 		this.lng = lng;
 		this.lat = lat;
-		this.bearing = this.cameraYtoAbsRadian( cameraY );
+		//this.bearing = this.cameraYtoAbsRadian( cameraY );
 		this.id = id;
+		this.pmanOffsetY = this.setPegmanRotationOffsetYFromCameraY(cameraY);
 	}
 
-	cameraYtoAbsRadian(cameraY){
-		return cameraY
+	updatePegmanOffset(cameraY){
+		this.pmanOffsetY = this.setPegmanRotationOffsetYFromCameraY(cameraY);
+	}
+
+	setPegmanRotationOffsetYFromCameraY(cameraY){
+		var deg = Math.ceil(-cameraY*180/Math.PI);
+		if(deg<0){
+			deg = 360+deg;
+		}
+		return 9+Math.round(deg/22.5)*60;
 	}
 } 
 
@@ -93,6 +105,7 @@ export class MapStore {
 class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	
 	panoStore:PanoStore;
+	mStore:MapStore;
 
 	constructor(props) {
 		super(props);
@@ -100,6 +113,7 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 			showComp: false,
 			mapStore: (this.props as any).mapStore
 		};
+		this.mStore = (this.props as any).mapStore;
 		this.panoStore = (this.props as any).panoStore;
 	}
 	
@@ -143,46 +157,65 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 		}
 	}
 
+	dotIcon = {
+		url: require(`./assets/pano_inside-2-medium.png`),
+		size: new (this.props as any).google.maps.Size(11, 11),
+		origin: new (this.props as any).google.maps.Point(0, 0),
+		anchor: new (this.props as any).google.maps.Point(5.5, 5.5)
+	};
+
+	
+
+	pman;
+
+	addPegman() {
+		var pegIcon = {
+			url: require(`./assets/rotating.png`),
+			size: new (this.props as any).google.maps.Size(44, 49),
+			origin: new (this.props as any).google.maps.Point(8, this.mStore.pmanOffsetY),
+			anchor: new (this.props as any).google.maps.Point(22, 34)
+		};
+		this.pman = <Marker
+			lid={this.mStore.id}
+			position={{
+				lat: this.mStore.lat,
+				lng: this.mStore.lng
+			}}
+			icon={pegIcon}
+			key={this.mStore.id}
+		/>;
+		return this.pman;
+	}
+
 	addMarkers() {
 		this.setBounds();
 		//let map = new Map(this.refs.map,);
 		//(this.props as any).google.maps.fitBounds(this.bounds);
-
-		var dotImage = {
-			url: require(`./assets/pano_inside-0-tiny.png`),
-			size: new (this.props as any).google.maps.Size(9, 9),
-			origin: new (this.props as any).google.maps.Point(0, 0),
-			anchor: new (this.props as any).google.maps.Point(4.5, 4.5)
-		};
-		var image;
+		var icon;
 		return (this.state as any).coords.map((coord, index) => {
-			if((this.state as any).coords[index].id===this.state.mapStore.id){
-				image = {
-					url: require(`./assets/rotating.png`),
-					size: new (this.props as any).google.maps.Size(44, 49),
-					origin: new (this.props as any).google.maps.Point(8, 9),
-					anchor: new (this.props as any).google.maps.Point(22, 34)
-				};
+			if ((this.state as any).coords[index].id === this.mStore.id) {
+				
 			}else{
-				image = dotImage;
+				icon = this.dotIcon;
+				return (
+					<Marker
+						lid={coord.id}
+						position={{
+							lat: coord.lat,
+							lng: coord.lng
+						}}
+						onClick={e => {
+							return this.gotoPano(e.lid);
+						}}
+						icon={icon}
+						key={coord.id}
+					/>
+				);
 			}
-			return (
-				<Marker
-					lid={coord.id}
-					position={{
-						lat: coord.lat,
-						lng: coord.lng
-					}}
-					onClick={e => {
-						return this.gotoPano(e.lid);
-					}}
-					icon={image}
-					key={coord.id}
-				/>
-			);
-		});
-    }
+		})
+	}
 	
+
 	gotoPano(id) {
 		// @ts-ignore
 		//this.props.history.push(`/viewPano/${id}`);
@@ -191,15 +224,14 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	}
 
 	render() {
-		const { showComp, mapStore } = this.state;
-
+		const { showComp } = this.state;
 		return showComp ? (
 			<StyledMap
 				ref={(this.props as any).onMapMounted}
 				google={(this.props as any).google}
-				zoom={16}
-				center={{ lat: mapStore.lat, lng: mapStore.lng }}
-				initialCenter={{ lat: mapStore.lat, lng: mapStore.lng}}
+				zoom={17}
+				center={{ lat: this.mStore.lat, lng: this.mStore.lng }}
+				initialCenter={{ lat: this.mStore.lat, lng: this.mStore.lng}}
 				bounds={this.bounds}
 				onReady={mapHandlerInit}
 				streetViewControl={false}
@@ -207,7 +239,8 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 				mapTypeControl={false}
 				rotateControl={false}
 			>
-		{ this.addMarkers() }
+		{ this.addMarkers() } 
+		{ this.addPegman() } 
 			</StyledMap>
 		) : null;
 	}

@@ -3,15 +3,15 @@ import * as THREE from "three";
 import { Canvas, useThree, useRender } from "react-three-fiber";
 import { withRouter, RouteComponentProps } from "react-router-dom";
 //import SVGLoader from "three-svg-loader";
-import { disableBodyScroll, enableBodyScroll, clearAllBodyScrollLocks } from 'body-scroll-lock';
+import { disableBodyScroll } from 'body-scroll-lock';
 
 import "./style/pano.css";
 import Minimap, {MapStore} from "./minimap"
 import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
 import Spinner from "./components/spinner";
-import { observable, autorun, reaction } from "mobx";
-import { observer } from "mobx-react";
+import { observable, reaction } from "mobx";
+//import { observer } from "mobx-react";
 //import OrbitControls from 'three-orbitcontrols'
 
 const TWEEN = require("@tweenjs/tween.js");
@@ -187,6 +187,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		});
 		tweenRot.onComplete(() => {
 			camera.rotation.y = 0;
+			this.mapStore.updatePegmanOffset(0.0);
 		});
 		tweenRot.start();
 	}
@@ -210,10 +211,8 @@ class Pano extends Component<PanoProps, PanoState> {
 					this.tempcylindermesh.rotation.y = this.currLoc.calibration;
 					this.threeScene.add(this.tempcylindermesh);
 					this.animateTeleportationTextureFade();
-					this.mapStore.lat = this.currLoc.coord.lat; 
-					this.mapStore.lng = this.currLoc.coord.lng;
-					this.mapStore.bearing = this.currLoc.cameraY;
-					this.mapStore.id = this.currLoc.id;
+					let {coord, cameraY, id} = this.currLoc;
+					this.mapStore.updateValues(coord.lat, coord.lng, cameraY, id);
 				},
 				undefined,
 				err => {
@@ -367,9 +366,10 @@ class Pano extends Component<PanoProps, PanoState> {
 			}
         }
         
-		function rotateScene(deltaX) {
+		var rotateScene = (deltaX) => {
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
+			this.mapStore.updatePegmanOffset(camera.rotation.y);
 		}
 		
 		function onWindowResize(){
@@ -413,7 +413,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			});
 			tweenRot.onComplete(() => {
 				camera.rotation.y = (-this.neighbors.get(id).bearing * Math.PI) / 180;
-				
+				this.mapStore.updatePegmanOffset(camera.rotation.y);
 			});
 
 			var zoom = {
@@ -483,10 +483,8 @@ class Pano extends Component<PanoProps, PanoState> {
                     this.tempcylindermesh.rotation.y = this.currLoc.calibration;
                     scene.add(this.tempcylindermesh);
 					animateTransition(id);
-					this.mapStore.lat = this.currLoc.coord.lat; 
-					this.mapStore.lng = this.currLoc.coord.lng;
-					this.mapStore.bearing = this.currLoc.cameraY;
-					this.mapStore.id = this.currLoc.id;
+					let {coord, cameraY, id} = this.currLoc;
+					this.mapStore.updateValues(coord.lat, coord.lng, cameraY, id);
 				},
 				undefined,
 				err => {

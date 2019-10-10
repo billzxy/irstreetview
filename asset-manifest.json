@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/irstreetview/static/css/main.baf2b93e.chunk.css",
-    "main.js": "/irstreetview/static/js/main.3e4614ef.chunk.js",
-    "main.js.map": "/irstreetview/static/js/main.3e4614ef.chunk.js.map",
+    "main.js": "/irstreetview/static/js/main.e7c71611.chunk.js",
+    "main.js.map": "/irstreetview/static/js/main.e7c71611.chunk.js.map",
     "runtime~main.js": "/irstreetview/static/js/runtime~main.a142e824.js",
     "runtime~main.js.map": "/irstreetview/static/js/runtime~main.a142e824.js.map",
-    "static/js/2.1993239d.chunk.js": "/irstreetview/static/js/2.1993239d.chunk.js",
-    "static/js/2.1993239d.chunk.js.map": "/irstreetview/static/js/2.1993239d.chunk.js.map",
+    "static/js/2.7842607f.chunk.js": "/irstreetview/static/js/2.7842607f.chunk.js",
+    "static/js/2.7842607f.chunk.js.map": "/irstreetview/static/js/2.7842607f.chunk.js.map",
     "index.html": "/irstreetview/index.html",
-    "precache-manifest.a44884d64e4d5639a8333cf6357ea5f1.js": "/irstreetview/precache-manifest.a44884d64e4d5639a8333cf6357ea5f1.js",
+    "precache-manifest.34161196a1abacce8ceafb2756304a12.js": "/irstreetview/precache-manifest.34161196a1abacce8ceafb2756304a12.js",
     "service-worker.js": "/irstreetview/service-worker.js",
     "static/css/main.baf2b93e.chunk.css.map": "/irstreetview/static/css/main.baf2b93e.chunk.css.map",
     "static/media/pano-20190724143458-mx.png": "/irstreetview/static/media/pano-20190724143458-mx.072de3d6.png",
@@ -36,6 +36,7 @@
     "static/media/pano-20190925112944-mx.png": "/irstreetview/static/media/pano-20190925112944-mx.fdd79d67.png",
     "static/media/pano-20190925113109-mx.png": "/irstreetview/static/media/pano-20190925113109-mx.1c1e94e1.png",
     "static/media/pano-20190925113249-mx.png": "/irstreetview/static/media/pano-20190925113249-mx.798912fc.png",
-    "static/media/pano-20190925113346-mx.png": "/irstreetview/static/media/pano-20190925113346-mx.0775a445.png"
+    "static/media/pano-20190925113346-mx.png": "/irstreetview/static/media/pano-20190925113346-mx.0775a445.png",
+    "static/media/rotating.png": "/irstreetview/static/media/rotating.4957277e.png"
   }
 }

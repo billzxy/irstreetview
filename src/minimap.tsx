@@ -67,17 +67,20 @@ export class MapStore {
 	@observable lng:number;
 	@observable lat:number;
 	@observable bearing:number;
+	@observable id:string;
 
-	constructor(lat, lng, cameraY){
+	constructor(lat, lng, cameraY, id){
 		this.lng = lng;
 		this.lat = lat;
 		this.bearing = this.cameraYtoAbsRadian( cameraY );
+		this.id = id;
 	}
 
-	updateValues(lat, lng, cameraY){
+	updateValues(lat, lng, cameraY, id){
 		this.lng = lng;
 		this.lat = lat;
 		this.bearing = this.cameraYtoAbsRadian( cameraY );
+		this.id = id;
 	}
 
 	cameraYtoAbsRadian(cameraY){
@@ -144,7 +147,25 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 		this.setBounds();
 		//let map = new Map(this.refs.map,);
 		//(this.props as any).google.maps.fitBounds(this.bounds);
+
+		var dotImage = {
+			url: require(`./assets/pano_inside-0-tiny.png`),
+			size: new (this.props as any).google.maps.Size(9, 9),
+			origin: new (this.props as any).google.maps.Point(0, 0),
+			anchor: new (this.props as any).google.maps.Point(4.5, 4.5)
+		};
+		var image;
 		return (this.state as any).coords.map((coord, index) => {
+			if((this.state as any).coords[index].id===this.state.mapStore.id){
+				image = {
+					url: require(`./assets/rotating.png`),
+					size: new (this.props as any).google.maps.Size(44, 49),
+					origin: new (this.props as any).google.maps.Point(8, 9),
+					anchor: new (this.props as any).google.maps.Point(22, 34)
+				};
+			}else{
+				image = dotImage;
+			}
 			return (
 				<Marker
 					lid={coord.id}
@@ -155,6 +176,7 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 					onClick={e => {
 						return this.gotoPano(e.lid);
 					}}
+					icon={image}
 					key={coord.id}
 				/>
 			);

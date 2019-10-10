@@ -118,7 +118,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		this.texture = this.loader.load(
 			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 			() => {
-				this.mapStore = new MapStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0);
+				this.mapStore = new MapStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0, this.currLoc.id);
 				this.panoStore = new PanoStore(this.currLoc.id);
 				this.panoIdChangeReaction = reaction(
 					() => this.panoStore.id,
@@ -213,6 +213,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					this.mapStore.lat = this.currLoc.coord.lat; 
 					this.mapStore.lng = this.currLoc.coord.lng;
 					this.mapStore.bearing = this.currLoc.cameraY;
+					this.mapStore.id = this.currLoc.id;
 				},
 				undefined,
 				err => {
@@ -485,6 +486,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					this.mapStore.lat = this.currLoc.coord.lat; 
 					this.mapStore.lng = this.currLoc.coord.lng;
 					this.mapStore.bearing = this.currLoc.cameraY;
+					this.mapStore.id = this.currLoc.id;
 				},
 				undefined,
 				err => {
@@ -626,7 +628,7 @@ class Pano extends Component<PanoProps, PanoState> {
                     </mesh>*/}
 				</group>
 				<group
-					onClick={() => console.log(this.panoStore.id)}//this.CameraLookNorth(camera)}
+					onClick={() => this.CameraLookNorth(camera)}
 					onPointerOver={e => {setChildrenOpacity(e.object.children, 0.8);}}
 					onPointerOut={e => {setChildrenOpacity(e.object.children, 0.5);}}
 					ref={compassGroup}

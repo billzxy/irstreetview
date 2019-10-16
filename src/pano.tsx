@@ -465,8 +465,8 @@ class Pano extends Component<PanoProps, PanoState> {
         scene.add(this.cylindermesh);
 		//RenderCompass();
 
-		var transitionToScene = async (id) => {
-			this.currLoc = this.neighbors.get(id).location;
+		var transitionToScene = async (pid) => {
+			this.currLoc = this.neighbors.get(pid).location;
 			//await this.currLoc.setAllAttr();
 			this.texture = this.loader.load(
 				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
@@ -482,7 +482,7 @@ class Pano extends Component<PanoProps, PanoState> {
                     this.tempcylindergeometry.scale(-1, 1, 1);
                     this.tempcylindermesh.rotation.y = this.currLoc.calibration;
                     scene.add(this.tempcylindermesh);
-					animateTransition(id);
+					animateTransition(pid);
 					let {coord, cameraY, id} = this.currLoc;
 					this.mapStore.updateValues(coord.lat, coord.lng, cameraY, id);
 				},

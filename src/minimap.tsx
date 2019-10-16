@@ -96,7 +96,7 @@ export class MapStore {
 		if(deg<0){
 			deg = 360+deg;
 		}
-		return 9+Math.round(deg/22.5)*60;
+		return 9+Math.floor(deg/22.5)*60;
 	}
 } 
 
@@ -169,10 +169,14 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	pman;
 
 	addPegman() {
+		var origin = new (this.props as any).google.maps.Point(8, 9);
+		if(this.mStore.pmanOffsetY){
+			origin = new (this.props as any).google.maps.Point(8, this.mStore.pmanOffsetY);
+		}
 		var pegIcon = {
 			url: require(`./assets/rotating.png`),
 			size: new (this.props as any).google.maps.Size(44, 49),
-			origin: new (this.props as any).google.maps.Point(8, this.mStore.pmanOffsetY),
+			origin: origin,
 			anchor: new (this.props as any).google.maps.Point(22, 34)
 		};
 		this.pman = <Marker

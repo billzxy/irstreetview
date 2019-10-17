@@ -107,6 +107,12 @@ class Pano extends Component<PanoProps, PanoState> {
 	cone1:THREE.Mesh;
 	cone2:THREE.Mesh;
 
+	pinSphereGeometry = new THREE.SphereGeometry(0.5,16,16);
+	pinNeedleGeometry = new THREE.CylinderGeometry(0.075, 0.025, 3, 10, 1, false);
+	pin0:THREE.Group;
+	pin1:THREE.Group;
+	pin2:THREE.Group;
+
 	//Neighbors
 	n0:NeighborType;
 	n1:NeighborType;
@@ -492,41 +498,9 @@ class Pano extends Component<PanoProps, PanoState> {
 				}
 			);
 		};
-		//this.InitNeighborPins();
-		/*
-		function RenderCompass() {
-			var loader = new SVGLoader();
-			loader.load(
-				require(`./assets/viewPano/compass.svg`),
-				function(data) {
-					var paths = data.paths;
-					for (var i = 0; i < paths.length; i++) {
-						var path = paths[i];
-						var material = new THREE.MeshBasicMaterial({
-							color: path.color,
-							side: THREE.DoubleSide,
-							depthWrite: false
-						});
-						var shapes = path.toShapes(true);
-						for (var j = 0; j < shapes.length; j++) {
-							var shape = shapes[j];
-							var geometry = new THREE.ShapeBufferGeometry(shape);
-							var mesh = new THREE.Mesh(geometry, material);
-							(compassGroup.current as any).add(mesh);
-						}
-					}
-					//console.log(compassGroup);
-					//(compassGroup.current as any).scale.set(13, 13, 13);
-					scene.add(compassGroup.current);
-				},
-				undefined,
-				function(error) {
-					console.log("Error Loading Compass");
-				}
-			);
-		}
-		RenderCompass();
-		*/
+		
+		var pinGroup = useRef();
+		var ping0 = useRef();
 
 		
         if(conemesh.current&&conemesh1.current&&conemesh2.current){
@@ -607,23 +581,13 @@ class Pano extends Component<PanoProps, PanoState> {
 							transitionToScene(this.n2.location.id);
 						}}
 						onPointerOver={e => {(e.object as any).material.opacity=0.7;}}
-						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
-                        ref={conemesh2}
-                        geometry={cone.geometry}
-                    >
-                        <meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
-                    </mesh>
-                    {/*<mesh //Test mesh
-                        onClick={() => fadeTexture()}
-						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
-						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
-                        ref={testMesh}
-                        geometry={cone.geometry}
-                        position={[8,0,0]}
-                        rotation={[1.571,0,0]}
-                    >
-                        <meshBasicMaterial attach="material" color="blue" opacity={0.5} transparent={true}/>
-                    </mesh>*/}
+						onPointerOut={e => { (e.object as any).material.opacity = 0.5; }}
+						ref={conemesh2}
+						geometry={cone.geometry}
+					>
+						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true} />
+					</mesh>
+					
 				</group>
 				<group
 					onClick={() => this.CameraLookNorth(camera)}
@@ -638,14 +602,37 @@ class Pano extends Component<PanoProps, PanoState> {
 					</mesh>
 					<mesh //Compass North Arrow 
 						position={[0, 0.03, 0.01]}
-					>	
-						<geometry 
+					>
+						<geometry
 							attach="geometry"
 							ref={triGeo}
 						/>
 						<meshBasicMaterial attach="material" color="red" opacity={0.5} transparent={true} />
 					</mesh>
 				</group>
+				{/*
+				<group
+					ref={pinGroup}
+					position={[-5, 0.0, -5]}
+					scale={[0.3,0.3,0.3]}
+				>
+					<group
+						ref={ping0}
+					>
+						<mesh
+							geometry={this.pinNeedleGeometry}
+							position={[0, -2, 0]}
+						>
+							<meshBasicMaterial attach="material" color="white" opacity={0.75} transparent={true} />
+						</mesh>
+						<mesh
+							geometry={this.pinSphereGeometry}
+							position={[0, 0, 0]}
+						>
+							<meshBasicMaterial attach="material" color="red" opacity={0.75} transparent={true} />
+						</mesh>
+					</group>
+				</group>*/}
 			</>
 		);
 	}

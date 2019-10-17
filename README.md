@@ -1,6 +1,6 @@
 ## Infrared Street View
 
-Check out the panoramic street views of hotspots in greater Boston area taken with Infrared cameras!
+Check out the panoramic street views of hotspots in greater Boston area taken with infrared cameras!
 
 See a demo [here](https://billzxy.github.io/irstreetview/)
 

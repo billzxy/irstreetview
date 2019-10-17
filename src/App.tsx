@@ -21,10 +21,6 @@ const routes = [
 	{
 		path: "/maps/concord",
 		title: "Concord"
-	},
-	{
-		path: "/viewPano",
-		title: "View Pano"
 	}
 ];
 

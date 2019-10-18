@@ -14,8 +14,8 @@ export const Container = styled.div`
 export const Header = styled.div`
 	position: fixed;
 	z-index: 999;
-	top: 20px;
-	left: 50%;
+	top: 10px;
+	right: 10px;
 	padding: 6px;
 	height: 20px;
 	display: flex;

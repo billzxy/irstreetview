@@ -16,7 +16,7 @@ export const Header = styled.div`
 	z-index: 999;
 	top: 10px;
 	right: 10px;
-	padding: 6px;
+	padding: 12px;
 	height: 20px;
 	display: flex;
 	justify-content: flex-start;
@@ -25,13 +25,14 @@ export const Header = styled.div`
     box-shadow: 2px 2px gray;
 
 	& .ir-nav-item {
-		margin-right: 1rem;
+		margin-right: 0.5rem;
+		margin-left: 0.5rem;
 		text-decoration: none;
-		color: rgba(0, 0, 0, 0.6);
+		color: rgba(0, 0, 0, 0.5);
 	}
 
 	& .ir-nav-item__active {
-		color: #ea6c2f;
+		color: #000000;
 	}
 `;
 

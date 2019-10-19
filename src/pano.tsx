@@ -270,9 +270,10 @@ class Pano extends Component<PanoProps, PanoState> {
 		//iter.next();
 		this.n0 = this.neighbors.get(iter.next().value);
 		console.log(this.currLoc.id);
+		let arrowSpacing = 7.5;
 		//position
-		this.cone0.position.z = -Math.cos(this.n0.bearing * Math.PI / 180);
-		this.cone0.position.x = Math.sin(this.n0.bearing * Math.PI / 180);
+		this.cone0.position.z = - arrowSpacing * Math.cos(this.n0.bearing * Math.PI / 180);
+		this.cone0.position.x = arrowSpacing * Math.sin(this.n0.bearing * Math.PI / 180);
 		//rotation
 		this.cone0.rotation.x = -1.5708;
 		this.cone0.rotation.z = (-this.n0.bearing) * Math.PI / 180;
@@ -282,8 +283,8 @@ class Pano extends Component<PanoProps, PanoState> {
 			this.n1 = this.neighbors.get(iter.next().value);
 			this.cone1.visible = true;
 			//position
-			this.cone1.position.z = -Math.cos(this.n1.bearing * Math.PI / 180);
-			this.cone1.position.x = Math.sin(this.n1.bearing * Math.PI / 180);
+			this.cone1.position.z = -arrowSpacing * Math.cos(this.n1.bearing * Math.PI / 180);
+			this.cone1.position.x = arrowSpacing * Math.sin(this.n1.bearing * Math.PI / 180);
 			//rotation
 			this.cone1.rotation.x = -1.5708;
 			this.cone1.rotation.z = (-this.n1.bearing) * Math.PI / 180;
@@ -292,8 +293,8 @@ class Pano extends Component<PanoProps, PanoState> {
 			this.n2 = this.neighbors.get(iter.next().value);
 			this.cone2.visible = true;
 			//position
-			this.cone2.position.z = -Math.cos(this.n2.bearing * Math.PI / 180);
-			this.cone2.position.x = Math.sin(this.n2.bearing * Math.PI / 180);
+			this.cone2.position.z = -arrowSpacing * Math.cos(this.n2.bearing * Math.PI / 180);
+			this.cone2.position.x = arrowSpacing * Math.sin(this.n2.bearing * Math.PI / 180);
 			//rotation
 			this.cone2.rotation.x = -1.5708;
 			this.cone2.rotation.z = (-this.n2.bearing) * Math.PI / 180;
@@ -553,13 +554,17 @@ class Pano extends Component<PanoProps, PanoState> {
 					onUpdate={self => self.updateProjectionMatrix()}
 				/>
                 
-				<group ref={coneGroup} /*group of arrows */>
+				<group /*group of arrows */
+				
+					ref={coneGroup}
+					scale={[0.5,0.5,0.5]} 
+				>
 					<mesh //First Arrow
 						onClick={() => {
 							transitionToScene(this.n0.location.id); /*this.currLoc.updateCalibration(camera)*/
 						}}
-						onPointerOver={e => {(e.object as any).material.opacity=0.7;}}
-						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
+						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
+						onPointerOut={e => {(e.object as any).material.opacity=0.65;}}
 						ref={conemesh}
 						geometry={cone.geometry}
 					>
@@ -569,8 +574,8 @@ class Pano extends Component<PanoProps, PanoState> {
 						onClick={() => {
 							transitionToScene(this.n1.location.id);
 						}}
-						onPointerOver={e => {(e.object as any).material.opacity=0.7;}}
-						onPointerOut={e => {(e.object as any).material.opacity=0.5;}}
+						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
+						onPointerOut={e => {(e.object as any).material.opacity=0.65;}}
                         ref={conemesh1}
                         geometry={cone.geometry}
                     >
@@ -580,8 +585,8 @@ class Pano extends Component<PanoProps, PanoState> {
 						onClick={() => {
 							transitionToScene(this.n2.location.id);
 						}}
-						onPointerOver={e => {(e.object as any).material.opacity=0.7;}}
-						onPointerOut={e => { (e.object as any).material.opacity = 0.5; }}
+						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
+						onPointerOut={e => { (e.object as any).material.opacity = 0.65; }}
 						ref={conemesh2}
 						geometry={cone.geometry}
 					>
@@ -610,11 +615,11 @@ class Pano extends Component<PanoProps, PanoState> {
 						<meshBasicMaterial attach="material" color="red" opacity={0.5} transparent={true} />
 					</mesh>
 				</group>
-				{/*
-				<group
+				
+				{/*<group
 					ref={pinGroup}
-					position={[-5, 0.0, -5]}
-					scale={[0.3,0.3,0.3]}
+					position={[-7, 0.1, -7]}
+					scale={[0.5,0.5,0.5]}
 				>
 					<group
 						ref={ping0}

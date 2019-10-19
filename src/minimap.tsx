@@ -1,14 +1,12 @@
-import React, { Component, useRef } from "react";
-import ReactDOM from "react-dom";
+import React, { Component } from "react";
 import { Map, GoogleApiWrapper, Marker } from "google-maps-react";
 import { withRouter, RouteComponentProps } from "react-router-dom";
 import styled from "styled-components";
-import { observable, reaction } from "mobx";
+import { observable } from "mobx";
 import { observer } from "mobx-react";
 
 import { PanoStore } from "./pano";
 import api from "./api/index";
-import { debuggerStatement } from "@babel/types";
 
 const StyledMap = styled(Map)`
 	width: 100% !important;
@@ -196,11 +194,13 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 		//let map = new Map(this.refs.map,);
 		//(this.props as any).google.maps.fitBounds(this.bounds);
 		var icon;
+		var z = 0;
 		return (this.state as any).coords.map((coord, index) => {
 			if ((this.state as any).coords[index].id === this.mStore.id) {
 				
 			}else{
 				icon = this.dotIcon;
+				z++;
 				return (
 					<Marker
 						lid={coord.id}
@@ -213,6 +213,7 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 						}}
 						icon={icon}
 						key={coord.id}
+						zIndex={z}
 					/>
 				);
 			}

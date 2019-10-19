@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import {
 	HashRouter as Router,
@@ -24,31 +24,44 @@ const routes = [
 	}
 ];
 
-export const Interface: React.FC = () => {
-	return (
-		<Router>
-			<Container>
-				<Header>
-					{routes.map(r => (
-						<NavLink
-							to={r.path}
-							key={r.path}
-							activeClassName="ir-nav-item__active"
-							className="ir-nav-item"
-						>
-							{r.title}
-						</NavLink>
-					))}
-				</Header>
-				<Content>
-					<Switch>
-						<Route path="/maps/:region" component={GMap} />}/>
-						<Route exact={true} path="/viewPano/:id" component={Pano} />
-						<Route path="/viewPano" component={Pano} />
-						<Redirect exact from="/" to="maps/concord" />
-					</Switch>
-				</Content>
-			</Container>
-		</Router>
-	);
+export class Interface extends Component {
+	constructor(props){
+        super(props)
+        this.state = {
+			renderPano: true
+		};
+        this.panoUnmount = this.panoUnmount.bind(this);
+    }
+    panoUnmount(){
+        this.setState({renderPano: false});
+    }
+
+	render() {
+		return (
+			<Router>
+				<Container>
+					<Header>
+						{routes.map(r => (
+							<NavLink
+								to={r.path}
+								key={r.path}
+								activeClassName="ir-nav-item__active"
+								className="ir-nav-item"
+							>
+								{r.title}
+							</NavLink>
+						))}
+					</Header>
+					<Content>
+						<Switch>
+							<Route path="/maps/:region" render={(props) => <GMap {...props}/> } />
+							<Route exact={true} path="/viewPano/:id" render={(props) => (this.state as any).renderPano ? <Pano {...props}/> : null } />
+							<Route path="/viewPano" component={Pano} />
+							<Redirect exact from="/" to="maps/concord" />
+						</Switch>
+					</Content>
+				</Container>
+			</Router>
+		);
+	}
 };

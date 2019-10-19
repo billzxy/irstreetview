@@ -131,7 +131,7 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 				google={(this.props as any).google}
 				zoom={18}
 				center={regions[this.props.match.params.region]}
-				initialCenter={{ lat: 42.45955, lng: -71.3525 }}
+				initialCenter={regions[this.props.match.params.region]}
 				bounds={this.bounds}
 			>
 				{this.addMarkers()}

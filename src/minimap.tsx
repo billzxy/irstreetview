@@ -219,6 +219,10 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 			}
 		})
 	}
+
+	renderCompass(){
+
+	}
 	
 
 	gotoPano(id) {
@@ -231,12 +235,13 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	render() {
 		const { showComp } = this.state;
 		return showComp ? (
+			<>
 			<StyledMap
 				ref={(this.props as any).onMapMounted}
 				google={(this.props as any).google}
 				zoom={17}
 				center={{ lat: this.mStore.lat, lng: this.mStore.lng }}
-				initialCenter={{ lat: this.mStore.lat, lng: this.mStore.lng}}
+				initialCenter={{ lat: this.mStore.lat, lng: this.mStore.lng }}
 				bounds={this.bounds}
 				onReady={mapHandlerInit}
 				streetViewControl={false}
@@ -244,9 +249,11 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 				mapTypeControl={false}
 				rotateControl={false}
 			>
-		{ this.addMarkers() } 
-		{ this.addPegman() } 
+				{this.addMarkers()}
+				{this.addPegman()}
 			</StyledMap>
+			{this.renderCompass()}
+			</>
 		) : null;
 	}
 }

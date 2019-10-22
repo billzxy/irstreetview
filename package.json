@@ -21,7 +21,7 @@
 		"react-dom": "^16.8.6",
 		"react-router-dom": "^5.0.1",
 		"react-scripts": "3.0.1",
-		"react-three-fiber": "^2.2.14",
+		"react-three-fiber": "^2.4.3",
 		"styled-components": "^4.3.2",
 		"three-orbitcontrols": "^2.108.1",
 		"three-svg-loader": "^0.2.4",

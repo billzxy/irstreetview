@@ -302,21 +302,23 @@ class Pano extends Component<PanoProps, PanoState> {
 	}
 
 	RenderPano() {
-		var mainCam = useRef();
-		var { gl, camera, canvas, scene } = useThree();
+		var { gl, camera, scene, canvas, raycaster } = useThree();
+		//var canvas = gl.domElement;  // for react-three-fiber v3.x
 		this.threeCamera = camera;
 		this.threeScene = scene;
+		
 		(camera as any).fov = 40;
 		//gl.setSize(window.innerWidth, window.innerHeight);
 		gl.setSize(canvas.clientWidth, canvas.clientHeight);
 		
-		camera.position.set(0, 0, 0);
+		camera.position.set(0, 0, 0.01);
 		camera.lookAt(0, 0, 0);
 
 		let cone = new Arrow();
 		var conemesh = useRef();
 		var conemesh1 = useRef();
 		var conemesh2 = useRef();
+		//var mousedir = useRef();
 
 		this.cone0 = conemesh.current as any;
 		this.cone1 = conemesh1.current as any;
@@ -328,18 +330,63 @@ class Pano extends Component<PanoProps, PanoState> {
 			mouseY = 0;
 
 		function onMouseMove(evt) {
-			if (!mouseDown) {
-				return;
-			}
-			evt.preventDefault();
-			var deltaX = evt.clientX - mouseX,
-				deltaY = evt.clientY - mouseY;
-			mouseX = evt.clientX;
-			mouseY = evt.clientY;
+			if (mouseDown) {
+				evt.preventDefault();
+				var deltaX = evt.clientX - mouseX,
+					deltaY = evt.clientY - mouseY;
+				mouseX = evt.clientX;
+				mouseY = evt.clientY;
 
-			rotateScene(deltaX);
+				rotateScene(deltaX);
+			}
 		}
 
+		var mouse = { x: 0, y: 0 };
+		let arrow = new Arrow();
+		let mouseplateG = useRef();
+		var showMousePlate = true;
+		var isAnimating = false;
+		//let plateG = mouseplateG ? mouseplateG.current as any : undefined;
+		
+		
+		var rcObjects = [];
+
+		var planegeo = new THREE.PlaneGeometry(40, 40);
+		var planemat = new THREE.MeshBasicMaterial({ color: "white", side: THREE.DoubleSide ,opacity:0.0, transparent:true });
+		var rcplane = new THREE.Mesh(planegeo, planemat); //not a remotely-controlled plane, but a mathematical plane that involves in raycast
+		rcplane.rotation.set(-1.5708, 0, 0);
+		rcplane.position.set(0,-1,0);
+		scene.add(rcplane);
+		if (conemesh.current && conemesh1.current && conemesh2.current) {
+			rcObjects.push(conemesh.current);
+			rcObjects.push(conemesh1.current);
+			rcObjects.push(conemesh2.current);
+			rcObjects.push(rcplane);
+			//rcObjects.push(compassGroup.current);
+		}
+
+		var onMouseMove2 = ( event ) => {
+			if(mouseplateG.current){
+				event.preventDefault();
+				mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+				mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+				raycaster.setFromCamera(mouse, camera);
+				var intersects = raycaster.intersectObjects(rcObjects);
+				if (intersects.length > 0) {
+					var intersect = intersects[0];
+					//console.log( intersects[ 0 ]);
+					if( intersects.length === 1){//intersect.object===rcplane){
+						//console.log(compassGroup.current);
+						(mouseplateG.current as any).visible = true;
+						(mouseplateG.current as any).position.copy(intersect.point).add(new THREE.Vector3(0, 0.01, 0));
+					}else{
+						(mouseplateG.current as any).visible = false;
+					}
+					
+				}
+			}
+		}
+		
 		function onMouseDown(evt) {
 			evt.preventDefault();
 			mouseDown = true;
@@ -377,13 +424,17 @@ class Pano extends Component<PanoProps, PanoState> {
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
 			this.mapStore.updatePegmanOffset(camera.rotation.y);
+			//console.log((compassGroup.current as any));
 		}
 		
 		function onWindowResize(){
-			gl.setSize( canvas.clientWidth, canvas.clientHeight );
+			gl.setSize(canvas.clientWidth, canvas.clientHeight);
 			(camera as any).aspect = canvas.clientWidth / canvas.clientHeight;
 			(camera as any).updateProjectionMatrix();
 		}
+
+
+		window.addEventListener('mousemove', onMouseMove2, false);
 		canvas.addEventListener("mousemove", e => onMouseMove(e), false);
 		canvas.addEventListener("mousedown", e => onMouseDown(e), false);
 		canvas.addEventListener("mouseup", e => onMouseUp(e), false);
@@ -393,6 +444,8 @@ class Pano extends Component<PanoProps, PanoState> {
 		window.addEventListener( 'resize', onWindowResize, false );
 
 		var animateTransition = id => {
+			(mouseplateG.current as any).visible = false;
+			isAnimating = true;
             //Set up parameters for TWEEN animations
 			const depth = 17;
 			const resFov = 75;
@@ -460,7 +513,9 @@ class Pano extends Component<PanoProps, PanoState> {
                 this.tempcylindermesh.geometry.dispose();
                 this.tempcylindermesh.material.dispose();
                 this.tempcylindermesh = undefined;
-                this.tempcylindergeometry.scale(-1,1,1);
+				this.tempcylindergeometry.scale(-1,1,1);
+				isAnimating = false;
+				(mouseplateG.current as any).visible = true;
 				await this.setNeighbors().then(this.RenderArrows);//.then(()=>{this.InitNeighborPins()});
 			});
             tweenRot.chain(tweenZoom);
@@ -500,10 +555,6 @@ class Pano extends Component<PanoProps, PanoState> {
 			);
 		};
 		
-		var pinGroup = useRef();
-		var ping0 = useRef();
-
-		
         if(conemesh.current&&conemesh1.current&&conemesh2.current){
 			this.RenderArrows();
         }
@@ -527,8 +578,8 @@ class Pano extends Component<PanoProps, PanoState> {
         var testMesh = useRef();
         if(testMesh.current){
             (testMesh.current as any).geometry.scale(2,2,2);
-        }
-		
+		}
+
 		useRender(() => {
 			TWEEN.update();
 			(coneGroup.current as any).position.set(
@@ -543,17 +594,15 @@ class Pano extends Component<PanoProps, PanoState> {
 			);
 			(compassGroup.current as any).rotation.y=camera.rotation.y;
 			(compassGroup.current as any).rotation.z=-camera.rotation.y;
+			
+			if(mouseplateG.current){
+				(mouseplateG.current as any).rotation.z=camera.rotation.y;
+			}
+
 		});
 
 		return (
-			<>
-				<perspectiveCamera
-					ref={mainCam}
-					fov={45}
-					aspect={window.innerWidth / window.innerHeight}
-					onUpdate={self => self.updateProjectionMatrix()}
-				/>
-                
+			<>  
 				<group /*group of arrows */
 				
 					ref={coneGroup}
@@ -599,6 +648,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					onPointerOver={e => {setChildrenOpacity(e.object.children, 0.8);}}
 					onPointerOut={e => {setChildrenOpacity(e.object.children, 0.5);}}
 					ref={compassGroup}
+					position={[0,0,-3]}
 				>
 					<mesh //Compass Plate 
 						position={[0, 0, 0]}
@@ -615,7 +665,26 @@ class Pano extends Component<PanoProps, PanoState> {
 						<meshBasicMaterial attach="material" color="red" opacity={0.5} transparent={true} />
 					</mesh>
 				</group>
-				
+
+				<group
+					ref={mouseplateG}
+					rotation={[-1.5708, 0, 0]}
+				>
+					<mesh
+						geometry={arrow.geometry}
+						position={[0, 0.05, 0.001]}
+						
+						scale={[0.2, 0.12, 0.2]}
+					>
+						<meshBasicMaterial attach="material" color="grey" opacity={0.7} transparent={true} />
+					</mesh>
+					<mesh
+						geometry={new THREE.CircleGeometry(0.4, 100, 0)}
+					>
+						<meshBasicMaterial attach="material" color="white" opacity={0.7} transparent={true} />
+					</mesh>
+				</group>
+
 				{/*<group
 					ref={pinGroup}
 					position={[-7, 0.1, -7]}

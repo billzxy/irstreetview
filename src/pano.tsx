@@ -279,6 +279,8 @@ class Pano extends Component<PanoProps, PanoState> {
 		this.cone0.rotation.z = (-this.n0.bearing) * Math.PI / 180;
 		this.cone1.visible = false;
 		this.cone2.visible = false;
+		this.cone0.geometry.computeBoundingSphere();
+		console.log(this.cone0.localToWorld(this.cone0.geometry.boundingSphere.center));
 		if(this.neighbors.size>1){
 			this.n1 = this.neighbors.get(iter.next().value);
 			this.cone1.visible = true;
@@ -288,6 +290,9 @@ class Pano extends Component<PanoProps, PanoState> {
 			//rotation
 			this.cone1.rotation.x = -1.5708;
 			this.cone1.rotation.z = (-this.n1.bearing) * Math.PI / 180;
+			//console.log(this.cone1.rotation.z);
+			this.cone1.geometry.computeBoundingSphere();
+			console.log(this.cone1.localToWorld(this.cone1.geometry.boundingSphere.center));
 		}
 		if(this.neighbors.size===3){
 			this.n2 = this.neighbors.get(iter.next().value);
@@ -298,6 +303,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			//rotation
 			this.cone2.rotation.x = -1.5708;
 			this.cone2.rotation.z = (-this.n2.bearing) * Math.PI / 180;
+			//console.log(this.cone2.rotation.z);
 		}
 	}
 
@@ -447,8 +453,8 @@ class Pano extends Component<PanoProps, PanoState> {
 			(mouseplateG.current as any).visible = false;
 			isAnimating = true;
             //Set up parameters for TWEEN animations
-			const depth = 17;
-			const resFov = 75;
+			const depth = 13;
+			const resFov = 65;
 			const camAt = (this.neighbors.get(id).bearing * Math.PI) / 180;
 			var endAt = (-this.neighbors.get(id).bearing * Math.PI) / 180;
 			if (camera.rotation.y > 0) {

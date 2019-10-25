@@ -329,6 +329,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		var conemesh1 = useRef();
 		var conemesh2 = useRef();
 		//var mousedir = useRef();
+		var compassPlate = useRef();
 
 		this.cone0 = conemesh.current as any;
 		this.cone1 = conemesh1.current as any;
@@ -351,10 +352,11 @@ class Pano extends Component<PanoProps, PanoState> {
 		rcplane.rotation.set(-1.5708, 0, 0);
 		rcplane.position.set(0,-1,0);
 		scene.add(rcplane);
-		if (conemesh.current && conemesh1.current && conemesh2.current) {
+		if (conemesh.current && conemesh1.current && conemesh2.current && compassPlate.current) {
 			rcObjects.push(conemesh.current);
 			rcObjects.push(conemesh1.current);
 			rcObjects.push(conemesh2.current);
+			rcObjects.push(compassPlate.current);
 			rcObjects.push(rcplane);
 			//rcObjects.push(compassGroup.current);
 		}
@@ -712,7 +714,9 @@ class Pano extends Component<PanoProps, PanoState> {
 				>
 					<mesh //Compass Plate 
 						onClick={() => this.CameraLookNorth(camera)}
-						geometry={new THREE.CircleGeometry(0.4, 100, 0)}>
+						geometry={new THREE.CircleGeometry(0.4, 100, 0)}
+						ref={compassPlate}	
+					>
 						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true} />
 					</mesh>
 					<mesh //Compass North Arrow 

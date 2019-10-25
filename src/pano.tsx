@@ -11,6 +11,7 @@ import { Location } from "./geo";
 import { Arrow, Cylinder } from "./shapes";
 import Spinner from "./components/spinner";
 import { observable, reaction } from "mobx";
+import { Vector3 } from "three";
 //import { observer } from "mobx-react";
 //import OrbitControls from 'three-orbitcontrols'
 
@@ -117,6 +118,8 @@ class Pano extends Component<PanoProps, PanoState> {
 	n0:NeighborType;
 	n1:NeighborType;
 	n2:NeighborType;
+
+	mouseSelectedArrowMesh:THREE.Mesh;
 
 	
 
@@ -279,8 +282,8 @@ class Pano extends Component<PanoProps, PanoState> {
 		this.cone0.rotation.z = (-this.n0.bearing) * Math.PI / 180;
 		this.cone1.visible = false;
 		this.cone2.visible = false;
-		this.cone0.geometry.computeBoundingSphere();
-		console.log(this.cone0.localToWorld(this.cone0.geometry.boundingSphere.center));
+		//this.cone0.geometry.computeBoundingSphere();
+		
 		if(this.neighbors.size>1){
 			this.n1 = this.neighbors.get(iter.next().value);
 			this.cone1.visible = true;
@@ -291,8 +294,8 @@ class Pano extends Component<PanoProps, PanoState> {
 			this.cone1.rotation.x = -1.5708;
 			this.cone1.rotation.z = (-this.n1.bearing) * Math.PI / 180;
 			//console.log(this.cone1.rotation.z);
-			this.cone1.geometry.computeBoundingSphere();
-			console.log(this.cone1.localToWorld(this.cone1.geometry.boundingSphere.center));
+			//this.cone1.geometry.computeBoundingSphere();
+			//console.log(this.cone1.localToWorld(this.cone1.geometry.boundingSphere.center));
 		}
 		if(this.neighbors.size===3){
 			this.n2 = this.neighbors.get(iter.next().value);
@@ -303,6 +306,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			//rotation
 			this.cone2.rotation.x = -1.5708;
 			this.cone2.rotation.z = (-this.n2.bearing) * Math.PI / 180;
+			//this.cone2.geometry.computeBoundingSphere();
 			//console.log(this.cone2.rotation.z);
 		}
 	}
@@ -330,35 +334,19 @@ class Pano extends Component<PanoProps, PanoState> {
 		this.cone1 = conemesh1.current as any;
 		this.cone2 = conemesh2.current as any;
 
-		// Mouse drag rotation controls
-		var mouseDown = false,
-			mouseX = 0,
-			mouseY = 0;
-
-		function onMouseMove(evt) {
-			if (mouseDown) {
-				evt.preventDefault();
-				var deltaX = evt.clientX - mouseX,
-					deltaY = evt.clientY - mouseY;
-				mouseX = evt.clientX;
-				mouseY = evt.clientY;
-
-				rotateScene(deltaX);
-			}
-		}
+		
 
 		var mouse = { x: 0, y: 0 };
 		let arrow = new Arrow();
 		let mouseplateG = useRef();
 		var showMousePlate = true;
 		var isAnimating = false;
-		//let plateG = mouseplateG ? mouseplateG.current as any : undefined;
-		
-		
+		let isDraggin = false;
+	
 		var rcObjects = [];
 
 		var planegeo = new THREE.PlaneGeometry(40, 40);
-		var planemat = new THREE.MeshBasicMaterial({ color: "white", side: THREE.DoubleSide ,opacity:0.0, transparent:true });
+		var planemat = new THREE.MeshBasicMaterial({ color: "grey", side: THREE.DoubleSide, opacity:0.0, transparent:true });
 		var rcplane = new THREE.Mesh(planegeo, planemat); //not a remotely-controlled plane, but a mathematical plane that involves in raycast
 		rcplane.rotation.set(-1.5708, 0, 0);
 		rcplane.position.set(0,-1,0);
@@ -369,6 +357,51 @@ class Pano extends Component<PanoProps, PanoState> {
 			rcObjects.push(conemesh2.current);
 			rcObjects.push(rcplane);
 			//rcObjects.push(compassGroup.current);
+		}
+
+		var bsphere = useRef();
+		if(bsphere.current){
+			this.cone0.geometry.computeBoundingSphere();
+			let center1 = this.cone0.geometry.boundingSphere.center;
+			let v1 = new Vector3(center1.x,center1.y,center1.z);
+			//@ts-ignore
+			coneGroup.current.localToWorld(v1);
+		}
+
+		var distanceToArrowInWorldCoord = (mesh) => {
+			(mouseplateG.current as any).children[1].geometry.computeBoundingSphere();
+			let center0 = (mouseplateG.current as any).children[1].geometry.boundingSphere.center;
+			let v0 = new Vector3(center0.x,center0.y,center0.z);
+			(mouseplateG.current as any).localToWorld(v0);
+
+			mesh.geometry.computeBoundingSphere();
+			let center1 = mesh.geometry.boundingSphere.center;
+			let v1 = new Vector3(center1.x,center1.y,center1.z);
+			mesh.localToWorld(v1);
+			
+			return v0.distanceTo(v1);
+		}
+
+		var getClosestArrowAndAdjustDirection = () => {
+			if(!mouseplateG.current)
+				return;
+			let arr = [this.cone0, this.cone1, this.cone2];
+			let dist = new Map<number, THREE.Mesh>();
+			for(let cone of arr){
+				if(!cone.visible){
+					continue;
+				}
+				dist.set( distanceToArrowInWorldCoord(cone), cone );
+			}
+			let min = Math.min(...dist.keys());
+			(mouseplateG.current as any).rotation.z = dist.get(min).rotation.z;
+			this.mouseSelectedArrowMesh = dist.get(min);
+		}
+
+		var navigateWithMouse = () => {
+			let nArr = [this.n0, this.n1, this.n2];
+			let id = nArr[this.mouseSelectedArrowMesh.userData.neighbor].location.id;
+			transitionToScene(id);
 		}
 
 		var onMouseMove2 = ( event ) => {
@@ -392,6 +425,23 @@ class Pano extends Component<PanoProps, PanoState> {
 				}
 			}
 		}
+
+		// Mouse drag rotation controls
+		var mouseDown = false,
+			mouseX = 0,
+			mouseY = 0;
+
+		function onMouseMove(evt) {
+			if (mouseDown) {
+				evt.preventDefault();
+				var deltaX = evt.clientX - mouseX,
+					deltaY = evt.clientY - mouseY;
+				mouseX = evt.clientX;
+				mouseY = evt.clientY;
+
+				rotateScene(deltaX);
+			}
+		}
 		
 		function onMouseDown(evt) {
 			evt.preventDefault();
@@ -403,6 +453,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		function onMouseUp(evt) {
 			evt.preventDefault();
 			mouseDown = false;
+			isDraggin = false;
 		}
 
 		//Touch rotation control
@@ -427,10 +478,10 @@ class Pano extends Component<PanoProps, PanoState> {
         }
         
 		var rotateScene = (deltaX) => {
+			isDraggin = true;
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
 			this.mapStore.updatePegmanOffset(camera.rotation.y);
-			//console.log((compassGroup.current as any));
 		}
 		
 		function onWindowResize(){
@@ -589,32 +640,32 @@ class Pano extends Component<PanoProps, PanoState> {
 		useRender(() => {
 			TWEEN.update();
 			(coneGroup.current as any).position.set(
-				-13 * Math.sin(camera.rotation.y),
-				-4,
-				-13 * Math.cos(camera.rotation.y)
+				-3 * Math.sin(camera.rotation.y),
+				-0.9,
+				-3 * Math.cos(camera.rotation.y)
 			);
 			(compassGroup.current as any).position.set(
-				-13 * Math.sin(camera.rotation.y-0.4),
-				-3,
-				-13 * Math.cos(camera.rotation.y-0.4)
+				-3 * Math.sin(camera.rotation.y-0.4),
+				-0.8,
+				-3 * Math.cos(camera.rotation.y-0.4)
 			);
 			(compassGroup.current as any).rotation.y=camera.rotation.y;
 			(compassGroup.current as any).rotation.z=-camera.rotation.y;
 			
-			if(mouseplateG.current){
-				(mouseplateG.current as any).rotation.z=camera.rotation.y;
-			}
+			getClosestArrowAndAdjustDirection();
+			
 
 		});
 
 		return (
-			<>  
+			<>
 				<group /*group of arrows */
-				
+
 					ref={coneGroup}
-					scale={[0.5,0.5,0.5]} 
+					scale={[0.2, 0.2, 0.2]}
 				>
 					<mesh //First Arrow
+						userData={{neighbor:0}}
 						onClick={() => {
 							transitionToScene(this.n0.location.id); /*this.currLoc.updateCalibration(camera)*/
 						}}
@@ -626,6 +677,7 @@ class Pano extends Component<PanoProps, PanoState> {
 						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
 					</mesh>
 					<mesh //Second Arrow
+						userData={{neighbor:1}}
 						onClick={() => {
 							transitionToScene(this.n1.location.id);
 						}}
@@ -637,6 +689,7 @@ class Pano extends Component<PanoProps, PanoState> {
                         <meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
                     </mesh>
 					<mesh //Third Arrow
+						userData={{neighbor:2}}
 						onClick={() => {
 							transitionToScene(this.n2.location.id);
 						}}
@@ -648,16 +701,17 @@ class Pano extends Component<PanoProps, PanoState> {
 						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true} />
 					</mesh>
 					
+					
 				</group>
 				<group
-					onClick={() => this.CameraLookNorth(camera)}
 					onPointerOver={e => {setChildrenOpacity(e.object.children, 0.8);}}
 					onPointerOut={e => {setChildrenOpacity(e.object.children, 0.5);}}
 					ref={compassGroup}
 					position={[0,0,-3]}
+					scale={[0.3, 0.3, 0.3]}
 				>
 					<mesh //Compass Plate 
-						position={[0, 0, 0]}
+						onClick={() => this.CameraLookNorth(camera)}
 						geometry={new THREE.CircleGeometry(0.4, 100, 0)}>
 						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true} />
 					</mesh>
@@ -675,6 +729,7 @@ class Pano extends Component<PanoProps, PanoState> {
 				<group
 					ref={mouseplateG}
 					rotation={[-1.5708, 0, 0]}
+					onPointerUp={()=>{if(!isDraggin){ navigateWithMouse(); }}}
 				>
 					<mesh
 						geometry={arrow.geometry}

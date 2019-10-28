@@ -778,7 +778,6 @@ class Pano extends Component<PanoProps, PanoState> {
 	//TODO: change the pano window render size
 	render() {
 		const { isLoading } = this.state;
-		
 
 		return isLoading ? (
 			<div className={"spinner-container"}>
@@ -800,11 +799,12 @@ class Pano extends Component<PanoProps, PanoState> {
 }
 
 export class PanoStore{
-	@observable id:string
+	@observable id: string
 
 	constructor(id){
 		this.id=id;
 	}
+
 	public updateId(id){
 		this.id=id;
 	}

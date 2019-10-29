@@ -48,7 +48,7 @@ export interface MapContainerState {
   coords?: Coordinate[]
 }
 
-export interface MapContainerProps extends RouteComponentProps<{region?: string}> {}
+export interface MapContainerProps extends RouteComponentProps<{region?: string, goBack?}> {}
 
 class MapContainer extends Component<MapContainerProps, MapContainerState> {
   constructor(props) {
@@ -122,6 +122,13 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
   gotoPano(id) {
     // @ts-ignore
     this.props.history.push(`/viewPano/${id}`)
+    //console.log(this.props);
+  }
+
+  goBack(){
+    // @ts-ignore
+    this.props.history.goBack();
+    console.log("go back");
   }
 
   get region() {

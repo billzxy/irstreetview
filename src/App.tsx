@@ -27,8 +27,11 @@ export class Interface extends Component {
     this.panoUnmount = this.panoUnmount.bind(this)
   }
 
+  gmapComponent;
+  panoComponent;
+
   panoUnmount() {
-    this.setState({renderPano: false})
+    console.log(this);
   }
 
   render() {
@@ -49,13 +52,14 @@ export class Interface extends Component {
           </Header>
           <Content>
             <Route path="/maps/:region">
-              <GMap />
+              <GMap ref={instance => {this.gmapComponent = instance;}}/>
               <Route
                 path="/viewPano/:id"
-                component={props => ((this.state as any).renderPano ? <Pano {...props} /> : null)}
+                component={props => ((this.state as any).renderPano ? <Pano {...props} goBack={() => this.panoUnmount()} /> : null)}
               />
             </Route>
             <Redirect exact from="/" to="/maps/concord" />
+            <Redirect exact from="/maps" to="/maps/concord" />
           </Content>
         </Container>
       </Router>

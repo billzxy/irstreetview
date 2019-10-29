@@ -64,6 +64,10 @@ class Pano extends Component<PanoProps, PanoState> {
 		setCurrLocAndNeighbors();
 	}
 
+	componentWillUnmount(){
+		console.log("Unmount pano...");
+	}
+	
 	async setNeighbors() {//Only supports two neighbors for now
         this.neighbors.clear();//Purge previous neighbors
 		await this.currLoc.getNeighborIds();
@@ -713,7 +717,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					scale={[0.3, 0.3, 0.3]}
 				>
 					<mesh //Compass Plate 
-						onClick={() => this.CameraLookNorth(camera)}
+						onClick={() => (this.props as any).goBack()}//this.CameraLookNorth(camera)}
 						geometry={new THREE.CircleGeometry(0.4, 100, 0)}
 						ref={compassPlate}	
 					>

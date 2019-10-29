@@ -777,6 +777,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	}
 	//TODO: change the pano window render size
 	render() {
+		console.log(this.props)
 		const { isLoading } = this.state;
 
 		return isLoading ? (

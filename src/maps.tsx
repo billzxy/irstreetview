@@ -1,6 +1,6 @@
 import React, {Component, useRef, useEffect} from 'react'
 import ReactDOM from 'react-dom'
-import {Map, GoogleApiWrapper, Marker} from 'google-maps-react'
+import {Map, GoogleApiWrapper, Marker, MarkerClusterer} from 'google-maps-react'
 import {withRouter, RouteComponentProps} from 'react-router-dom'
 import styled from 'styled-components'
 
@@ -138,7 +138,13 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
         initialCenter={REGIONS[this.region]}
         bounds={this.bounds}
       >
-        {this.addMarkers()}
+        <MarkerClusterer
+          averageCenter
+          gridSize={60}
+        >
+         {this.addMarkers()}
+        </MarkerClusterer>
+        
       </StyledMap>
     )
   }

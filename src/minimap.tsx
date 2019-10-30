@@ -24,12 +24,17 @@ const Container = styled.div`
 	}
 `;
 
-var minimapElement;
+var minimapElement, infoBoxElement;
 var mapHandlerInit = () => {
 	minimapElement = (document.getElementsByClassName('Minimap') as HTMLCollectionOf<HTMLElement>)[0];
 	//console.log(minimapElement[0]);
 	minimapElement.addEventListener("mouseover", e => minimapZoomIn(e), false);
 	minimapElement.addEventListener("mouseout", e => minimapZoomOut(e), false);
+
+	infoBoxElement = (document.getElementsByClassName('InfoBox') as HTMLCollectionOf<HTMLElement>)[0];
+	infoBoxElement.addEventListener("mouseover", e => infoBoxHovered(e), false);
+	infoBoxElement.addEventListener("mouseout", e => infoBoxUnhovered(e), false);
+	infoBoxElement.addEventListener("mousedown", e => goBack(e), false);
 }
 function minimapZoomIn(e){
 	e.preventDefault();
@@ -43,13 +48,6 @@ function minimapZoomOut(e){
 	minimapElement.style.height = "100px";
 }
 
-var infoBoxElement;
-var mapHandlerInit = () => {
-	infoBoxElement = (document.getElementsByClassName('InfoBox') as HTMLCollectionOf<HTMLElement>)[0];
-	infoBoxElement.addEventListener("mouseover", e => infoBoxHovered(e), false);
-	infoBoxElement.addEventListener("mouseout", e => infoBoxUnhovered(e), false);
-	infoBoxElement.addEventListener("mousedown", e => goBack(e), false);
-}
 function infoBoxHovered(e){
 	e.preventDefault();
 	infoBoxElement.style.opacity = "0.75";

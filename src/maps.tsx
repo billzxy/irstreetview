@@ -44,13 +44,14 @@ export interface Coordinate {
   lat: number
   lng: number
 }
+
 export interface MapContainerState {
   coords?: Coordinate[]
 }
 
 export interface MapContainerProps extends RouteComponentProps<{region?: string, goBack?}> {}
 
-class MapContainer extends Component<MapContainerProps, MapContainerState> {
+export class MapContainer extends Component<MapContainerProps, MapContainerState> {
   constructor(props) {
     super(props)
     this.state = {
@@ -138,7 +139,6 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
   render() {
     return (
       <StyledMap
-        ref={(this.props as any).onMapMounted}
         google={(this.props as any).google}
         zoom={18}
         center={REGIONS[this.region]}
@@ -153,13 +153,16 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 
 const EnhancedMap = GoogleApiWrapper({
   apiKey: `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
-})(MapContainer)
+  /* 
+    Since we want to have a reference of MapContainer, so we need to pass the ref here.
+  */
+})(props => <MapContainer {...props} ref={props.mapRef} />)
 
 // google-maps-react is making an higher-order-component
 // in a stupid way, as there is no way for us to change
 // the container tag (always div), and the container does not
 // accept className prop, which makes it hard for us to style
-export default withRouter(props => {
+export default withRouter<MapContainerProps, React.FC<MapContainerProps>>(props => {
   useEffect(() => {
     return () => {
       console.log('GMap...dying')

@@ -1,9 +1,9 @@
-import React, {Component} from 'react'
+import React, {Component, useRef} from 'react'
 import ReactDOM from 'react-dom'
 import {HashRouter as Router, Route, Switch, NavLink, Redirect} from 'react-router-dom'
 
 import {Container, Header, Content} from './components/layout'
-import GMap from './maps'
+import GMap, {MapContainer} from './maps'
 import Pano from './pano'
 import './style/App.css'
 
@@ -25,6 +25,7 @@ export class Interface extends Component {
       renderPano: true
     }
     this.panoUnmount = this.panoUnmount.bind(this)
+    //this.mapElem = React.createRef<MapContainer>()
   }
 
   gmapComponent;
@@ -52,7 +53,7 @@ export class Interface extends Component {
           </Header>
           <Content>
             <Route path="/maps/:region">
-              <GMap ref={instance => {this.gmapComponent = instance;}}/>
+              <GMap />
               <Route
                 path="/viewPano/:id"
                 component={props => ((this.state as any).renderPano ? <Pano {...props} goBack={() => this.panoUnmount()} /> : null)}

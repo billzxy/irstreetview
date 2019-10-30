@@ -726,7 +726,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					scale={[0.3, 0.3, 0.3]}
 				>
 					<mesh //Compass Plate 
-						onClick={() => (this.props as any).history.goBack()}//this.CameraLookNorth(camera)}
+						onClick={() => this.CameraLookNorth(camera)}
 						geometry={new THREE.CircleGeometry(0.4, 100, 0)}
 						ref={compassPlate}	
 					>

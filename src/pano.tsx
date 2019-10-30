@@ -35,6 +35,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	mapStore = undefined;
 	panoStore = undefined;
 	panoIdChangeReaction;
+	canvasStyle = {cursor:"default"};	
 
 	constructor(props) {
 		super(props);
@@ -92,6 +93,14 @@ class Pano extends Component<PanoProps, PanoState> {
 			distance: this.currLoc.getDistanceTo(n),
 			bearing: this.currLoc.getBearingTo(n)
 		});
+	}
+
+	toggleCursor(isPointer){
+		if(isPointer){
+			this.canvasStyle = {cursor:"pointer"}
+		}else{
+			this.canvasStyle = {cursor:"default"}
+		}
 	}
 
 	//THREEjs objects
@@ -710,14 +719,14 @@ class Pano extends Component<PanoProps, PanoState> {
 					
 				</group>
 				<group
-					onPointerOver={e => {setChildrenOpacity(e.object.children, 0.8);}}
-					onPointerOut={e => {setChildrenOpacity(e.object.children, 0.5);}}
+					onPointerOver={e => {setChildrenOpacity(e.object.children, 0.8); this.toggleCursor(true);}}
+					onPointerOut={e => {setChildrenOpacity(e.object.children, 0.5); this.toggleCursor(false);}}
 					ref={compassGroup}
 					position={[0,0,-3]}
 					scale={[0.3, 0.3, 0.3]}
 				>
 					<mesh //Compass Plate 
-						onClick={() => (this.props as any).goBack()}//this.CameraLookNorth(camera)}
+						onClick={() => (this.props as any).history.goBack()}//this.CameraLookNorth(camera)}
 						geometry={new THREE.CircleGeometry(0.4, 100, 0)}
 						ref={compassPlate}	
 					>
@@ -789,12 +798,12 @@ class Pano extends Component<PanoProps, PanoState> {
 			</div>
 		) : (
 			<div className="Pano-container">
-				<div className="Pano-canvas">
+				<div className="Pano-canvas" style={this.canvasStyle}>
 					<Canvas>
 						<this.RenderPano />
 					</Canvas>
 				</div>
-				<div className="Minimap">
+				<div>
 					<Minimap mapStore={this.mapStore} panoStore={this.panoStore}/>
 				</div>
 			</div>

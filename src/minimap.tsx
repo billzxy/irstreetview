@@ -43,6 +43,28 @@ function minimapZoomOut(e){
 	minimapElement.style.height = "100px";
 }
 
+var infoBoxElement;
+var mapHandlerInit = () => {
+	infoBoxElement = (document.getElementsByClassName('InfoBox') as HTMLCollectionOf<HTMLElement>)[0];
+	infoBoxElement.addEventListener("mouseover", e => infoBoxHovered(e), false);
+	infoBoxElement.addEventListener("mouseout", e => infoBoxUnhovered(e), false);
+	infoBoxElement.addEventListener("mousedown", e => goBack(e), false);
+}
+function infoBoxHovered(e){
+	e.preventDefault();
+	infoBoxElement.style.opacity = "0.75";
+}
+
+function infoBoxUnhovered(e){
+	e.preventDefault();
+	infoBoxElement.style.opacity = "0.5";
+}
+
+function goBack(e) {
+	e.preventDefault();
+	window.history.back();
+}
+
 export interface Coordinate {
 	id: string | number;
 	lat: number;
@@ -262,8 +284,48 @@ const Minimap = GoogleApiWrapper({
 	apiKey: `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
 })(withRouter(MapContainer));
 
+
+class InfoBox extends Component {
+	constructor(props) {
+		super(props);
+	}
+
+	backBox(){
+		return(
+			<div >
+				<span> ← </span>
+			</div>
+		)
+	}
+
+	textBox(){
+		return(
+			<div>
+
+			</div>
+		)
+	}
+
+	render(){
+		return(
+			<this.backBox />
+		)
+	}
+
+
+}
+
 export default props => (
-	<Container>
-		<Minimap {...props} />
-	</Container>
+	<>
+		<div className="Minimap">
+			<Container>
+				<Minimap {...props} />
+
+			</Container>
+
+		</div>
+		<div className="InfoBox">
+			<InfoBox />
+		</div>
+	</>
 );

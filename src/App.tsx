@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom'
 import {HashRouter as Router, Route, Switch, NavLink, Redirect} from 'react-router-dom'
 
 import {Container, Header, Content} from './components/layout'
-import GMap, {MapContainer} from './maps'
+import GMap from './gmaps'
 import Pano from './pano'
 import './style/App.css'
 

@@ -791,7 +791,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	//TODO: change the pano window render size
 	render() {
 		const { isLoading } = this.state;
-
+		console.log("render")
 		return isLoading ? (
 			<div className={"spinner-container"}>
 				<Spinner width={100} height={100} />

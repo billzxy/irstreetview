@@ -1,16 +1,11 @@
 import React, {Component, useRef, useEffect} from 'react'
-import ReactDOM from 'react-dom'
-import {Map, GoogleApiWrapper, Marker, MarkerClusterer} from 'google-maps-react'
 import {withRouter, RouteComponentProps} from 'react-router-dom'
+import { compose, withProps } from "recompose"
+import { withScriptjs, withGoogleMap, GoogleMap, Marker } from "react-google-maps"
 import styled from 'styled-components'
 
 import api from './api/index'
 
-// I believe there is a bug of google-maps-react
-// as it does not respect the custom style object you pass
-// in. So we have to use important for now
-// TODO:
-// look for better map candidate
 const StyledMap = styled(Map)`
   width: 100%;
   height: 100%;
@@ -49,7 +44,7 @@ export interface MapContainerState {
   coords?: Coordinate[]
 }
 
-export interface MapContainerProps extends RouteComponentProps<{region?: string}> {}
+export interface MapContainerProps extends RouteComponentProps<{region?: string, goBack?}> {}
 
 export class MapContainer extends Component<MapContainerProps, MapContainerState> {
   constructor(props) {
@@ -106,15 +101,14 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
     return coords.map((coord, index) => {
       return (
         <Marker
-          lid={coord.id}
+          label={coord.id}
           position={{
             lat: coord.lat,
             lng: coord.lng
           }}
           onClick={e => {
-            return this.gotoPano(e.lid)
+            return this.gotoPano(e.label)
           }}
-          key={coord.id}
         />
       )
     })
@@ -139,7 +133,6 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
   render() {
     return (
       <StyledMap
-        ref={(this.props as any).onMapMounted}
         google={(this.props as any).google}
         zoom={18}
         center={REGIONS[this.region]}
@@ -154,15 +147,105 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
   }
 }
 
+/*
 const EnhancedMap = GoogleApiWrapper({
   apiKey: `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
- 
-})(MapContainer)
+  /* 
+    Since we want to have a reference of MapContainer, so we need to pass the ref here.
+  
+})(props => <MapContainer {...props} ref={props.mapRef} />)
+*/
 
-// google-maps-react is making an higher-order-component
-// in a stupid way, as there is no way for us to change
-// the container tag (always div), and the container does not
-// accept className prop, which makes it hard for us to style
+class MyFancyComponent extends React.PureComponent<MapContainerProps, MapContainerState> {
+    state = {
+        coords: []
+    }
+    constructor(props) {
+        super(props)
+    }
+
+    MyMapComponent = compose(
+        withProps({
+            googleMapURL: "https://maps.googleapis.com/maps/api/js?key=" + `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}` + "&v=3.exp&libraries=geometry,drawing,places",
+            loadingElement: <div style={{ height: `100%` }} />,
+            containerElement: <div style={{ height: `100%` }} />,
+            mapElement: <div style={{ height: `100%` }} />,
+        }),
+        withScriptjs,
+        withGoogleMap
+    )((props) =>
+        <GoogleMap
+            defaultZoom={18}
+            defaultCenter={REGIONS[this.region]}
+        >
+            {this.addMarkers()}
+        </GoogleMap>
+    )
+
+    componentDidMount() {
+        var getAllPanoCoords = async () => {
+            await api.getAllPanoIdAndCoord().then(result => {
+                var coordArr = []
+                let data = result.data.data
+                for (var i = 0; i < data.length; i++) {
+                    coordArr.push({
+                        id: data[i].id,
+                        lat: data[i].coord.lat,
+                        lng: data[i].coord.lng
+                    })
+                }
+                this.setState({
+                    coords: coordArr
+                })
+            })
+        }
+        getAllPanoCoords()
+    }
+
+    addMarkers() {
+        const { coords } = this.state
+        if (!coords) return
+
+        //this.setBounds()
+        //let map = new Map(this.refs.map,);
+        //(this.props as any).google.maps.fitBounds(this.bounds);
+        return coords.map((coord, index) => {
+            return (
+                <Marker
+                    key={coord.id}
+                    position={{
+                        lat: coord.lat,
+                        lng: coord.lng
+                    }}
+                    onClick={() => {
+                        console.log("onClick");
+                        this.gotoPano(coord.id)
+                    }}
+                />
+            )
+        })
+    }
+
+    get region() {
+        console.log("get region:",this.props.match);
+        //@ts-ignore
+        return this.props.match ? this.props.match.params.region : 'boston'
+    }
+
+
+    gotoPano(id) {
+        // @ts-ignore
+        this.props.history.push(`/viewPano/${id}`);
+        console.log("gotopano:",this.props);
+    }
+
+    render() {
+        return (
+            <this.MyMapComponent />
+        )
+    }
+}
+
 export default withRouter(props => {
   useEffect(() => {
     return () => {
@@ -172,7 +255,7 @@ export default withRouter(props => {
 
   return (
     <Container show={!!props.match}>
-      <EnhancedMap {...props} />
+      <MyFancyComponent {...props} />
     </Container>
   )
 })

@@ -1,9 +1,9 @@
 import React, {Component, useRef} from 'react'
 import ReactDOM from 'react-dom'
 import {HashRouter as Router, Route, Switch, NavLink, Redirect} from 'react-router-dom'
-
+import { observable, reaction } from "mobx";
 import {Container, Header, Content} from './components/layout'
-import GMap, {MapContainer} from './maps'
+import GMap from './maps'
 import Pano from './pano'
 import './style/App.css'
 
@@ -24,16 +24,12 @@ export class Interface extends Component {
     this.state = {
       renderPano: true
     }
-    this.panoUnmount = this.panoUnmount.bind(this)
-    //this.mapElem = React.createRef<MapContainer>()
   }
 
   gmapComponent;
   panoComponent;
 
-  panoUnmount() {
-    console.log(this);
-  }
+ 
 
   render() {
     return (
@@ -56,7 +52,7 @@ export class Interface extends Component {
               <GMap />
               <Route
                 path="/viewPano/:id"
-                component={props => ((this.state as any).renderPano ? <Pano {...props} goBack={() => this.panoUnmount()} /> : null)}
+                component={props => ((this.state as any).renderPano ? <Pano {...props} /> : null)}
               />
             </Route>
             <Redirect exact from="/" to="/maps/concord" />

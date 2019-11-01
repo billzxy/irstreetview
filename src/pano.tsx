@@ -6,9 +6,9 @@ import { withRouter, RouteComponentProps } from "react-router-dom";
 import { disableBodyScroll } from 'body-scroll-lock';
 
 import "./style/pano.css";
-import Minimap, {MapStore} from "./minimap"
-import { Location } from "./geo";
-import { Arrow, Cylinder } from "./shapes";
+import Minimap, {PanoPageStore} from "./components/pano/minimap"
+import { Location } from "./components/pano/location";
+import { Arrow, Cylinder } from "./components/pano/shapes";
 import Spinner from "./components/spinner";
 import { observable, reaction } from "mobx";
 import { Vector3 } from "three";
@@ -32,8 +32,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	//Members
 	currLoc: Location;
 	neighbors: Map<string, NeighborType>;
-	mapStore = undefined;
-	panoStore = undefined;
+	panoPageStore = undefined;
 	panoIdChangeReaction;
 	canvasStyle = {cursor:"default"};	
 
@@ -55,6 +54,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		var setCurrLocAndNeighbors = async () => {
 			//setCurrLoc
 			this.currLoc = new Location(this.panoId);
+			
 			await this.currLoc.setAllAttr().then(() => {
 				this.loadTexture();
 			});
@@ -140,12 +140,10 @@ class Pano extends Component<PanoProps, PanoState> {
 		this.texture = this.loader.load(
 			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 			() => {
-				this.mapStore = new MapStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0, this.currLoc.id);
-				this.panoStore = new PanoStore(this.currLoc.id);
+				this.panoPageStore = new PanoPageStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0, this.currLoc.id);
 				this.panoIdChangeReaction = reaction(
-					() => this.panoStore.id,
+					() => this.panoPageStore.id,
 					(id, reaction) => {
-						//console.log(this.panoStore);
 						this.teleportToScene(id);
 						//reaction.dispose();
 					}
@@ -209,7 +207,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		});
 		tweenRot.onComplete(() => {
 			camera.rotation.y = 0;
-			this.mapStore.updatePegmanOffset(0.0);
+			this.panoPageStore.updatePegmanOffset(0.0);
 		});
 		tweenRot.start();
 	}
@@ -234,7 +232,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					this.threeScene.add(this.tempcylindermesh);
 					this.animateTeleportationTextureFade();
 					let {coord, cameraY, id} = this.currLoc;
-					this.mapStore.updateValues(coord.lat, coord.lng, cameraY, id);
+					this.panoPageStore.updateValues(coord.lat, coord.lng, cameraY, id);
 				},
 				undefined,
 				err => {
@@ -285,7 +283,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		var iter = this.neighbors.keys();
 		//iter.next();
 		this.n0 = this.neighbors.get(iter.next().value);
-		console.log(this.currLoc.id);
+		console.trace(this.currLoc.id);
 		let arrowSpacing = 7.5;
 		//position
 		this.cone0.position.z = - arrowSpacing * Math.cos(this.n0.bearing * Math.PI / 180);
@@ -414,6 +412,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		}
 
 		var navigateWithMouse = () => {
+			console.log("navgate w mouse transition");
 			let nArr = [this.n0, this.n1, this.n2];
 			let id = nArr[this.mouseSelectedArrowMesh.userData.neighbor].location.id;
 			transitionToScene(id);
@@ -496,7 +495,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			isDraggin = true;
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
-			this.mapStore.updatePegmanOffset(camera.rotation.y);
+			this.panoPageStore.updatePegmanOffset(camera.rotation.y);
 		}
 		
 		function onWindowResize(){
@@ -545,7 +544,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			});
 			tweenRot.onComplete(() => {
 				camera.rotation.y = (-this.neighbors.get(id).bearing * Math.PI) / 180;
-				this.mapStore.updatePegmanOffset(camera.rotation.y);
+				this.panoPageStore.updatePegmanOffset(camera.rotation.y);
 			});
 
 			var zoom = {
@@ -618,7 +617,7 @@ class Pano extends Component<PanoProps, PanoState> {
                     scene.add(this.tempcylindermesh);
 					animateTransition(pid);
 					let {coord, cameraY, id} = this.currLoc;
-					this.mapStore.updateValues(coord.lat, coord.lng, cameraY, id);
+					this.panoPageStore.updateValues(coord.lat, coord.lng, cameraY, id);
 				},
 				undefined,
 				err => {
@@ -804,22 +803,10 @@ class Pano extends Component<PanoProps, PanoState> {
 					</Canvas>
 				</div>
 				<div>
-					<Minimap mapStore={this.mapStore} panoStore={this.panoStore}/>
+					<Minimap panoPageStore={this.panoPageStore} />
 				</div>
 			</div>
 		);
-	}
-}
-
-export class PanoStore{
-	@observable id: string
-
-	constructor(id){
-		this.id=id;
-	}
-
-	public updateId(id){
-		this.id=id;
 	}
 }
 

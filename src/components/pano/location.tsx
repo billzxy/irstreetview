@@ -1,5 +1,5 @@
 import * as geolib from 'geolib'
-import api from './api/index'
+import api from '../../api/index'
 
 class Location {
     //Members

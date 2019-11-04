@@ -283,7 +283,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		var iter = this.neighbors.keys();
 		//iter.next();
 		this.n0 = this.neighbors.get(iter.next().value);
-		console.trace(this.currLoc.id);
+		console.log(this.currLoc.id);
 		let arrowSpacing = 7.5;
 		//position
 		this.cone0.position.z = - arrowSpacing * Math.cos(this.n0.bearing * Math.PI / 180);
@@ -332,7 +332,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		//gl.setSize(window.innerWidth, window.innerHeight);
 		gl.setSize(canvas.clientWidth, canvas.clientHeight);
 		
-		camera.position.set(0, 0, 0.01);
+		camera.position.set(0, 0, 0.0);
 		camera.lookAt(0, 0, 0);
 
 		let cone = new Arrow();
@@ -790,7 +790,6 @@ class Pano extends Component<PanoProps, PanoState> {
 	//TODO: change the pano window render size
 	render() {
 		const { isLoading } = this.state;
-
 		return isLoading ? (
 			<div className={"spinner-container"}>
 				<Spinner width={100} height={100} />

@@ -1,10 +1,12 @@
-import React, {Component, useRef, useEffect} from 'react'
-import {withRouter, RouteComponentProps} from 'react-router-dom'
+import React, { Component, useRef, useEffect } from 'react'
+import { withRouter, RouteComponentProps } from 'react-router-dom'
 import { compose, withProps } from "recompose"
-import { withScriptjs, withGoogleMap, GoogleMap, Marker } from "react-google-maps"
+import { withScriptjs, withGoogleMap, GoogleMap, Marker} from "react-google-maps"
+import { observable, reaction } from "mobx";
 import styled from 'styled-components'
-
 import api from './api/index'
+
+const { MarkerClusterer } = require("react-google-maps/lib/components/addons/MarkerClusterer");
 
 const StyledMap = styled(Map)`
   width: 100%;
@@ -12,10 +14,10 @@ const StyledMap = styled(Map)`
   position: relative !important;
 `
 
-const Container = styled.div<{show: boolean}>`
+const Container = styled.div<{ show: boolean }>`
   width: 100%;
   height: 100%;
-  display: ${({show = false}) => (show ? 'block' : 'none')};
+  display: ${({ show = false }) => (show ? 'block' : 'none')};
 
   & > div {
     width: 100%;
@@ -31,6 +33,10 @@ const REGIONS = {
   concord: {
     lat: 42.45955,
     lng: -71.3525
+  },
+  center: {
+    lat: 42.4,
+    lng: -71.2
   }
 }
 
@@ -44,7 +50,7 @@ export interface MapContainerState {
   coords?: Coordinate[]
 }
 
-export interface MapContainerProps extends RouteComponentProps<{region?: string, goBack?}> {}
+export interface MapContainerProps extends RouteComponentProps<{ region?: string, goBack?}> { }
 
 export class MapContainer extends Component<MapContainerProps, MapContainerState> {
   constructor(props) {
@@ -77,7 +83,7 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
   bounds = new (this.props as any).google.maps.LatLngBounds()
 
   setBounds() {
-    const {coords} = this.state
+    const { coords } = this.state
     if (!coords) return
 
     for (var i = 0; i < coords.length; i++) {
@@ -92,7 +98,7 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
   }
 
   addMarkers() {
-    const {coords} = this.state
+    const { coords } = this.state
     if (!coords) return
 
     this.setBounds()
@@ -120,7 +126,7 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
     //console.log(this.props);
   }
 
-  goBack(){
+  goBack() {
     // @ts-ignore
     this.props.history.goBack();
     console.log("go back");
@@ -139,9 +145,13 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
         initialCenter={REGIONS[this.region]}
         bounds={this.bounds}
       >
-        
-        {this.addMarkers()}
-        
+        <MarkerClusterer
+          averageCenter
+          enableRetinaIcons
+          gridSize={60}
+        >
+          {this.addMarkers()}
+        </MarkerClusterer>
       </StyledMap>
     )
   }
@@ -156,94 +166,105 @@ const EnhancedMap = GoogleApiWrapper({
 })(props => <MapContainer {...props} ref={props.mapRef} />)
 */
 
-class MyFancyComponent extends React.PureComponent<MapContainerProps, MapContainerState> {
-    state = {
-        coords: []
-    }
-    constructor(props) {
-        super(props)
-    }
+class GMapComponent extends React.PureComponent<MapContainerProps, MapContainerState> {
+  state = {
+    coords: []
+  }
+  constructor(props) {
+    super(props)
+  }
 
-    MyMapComponent = compose(
-        withProps({
-            googleMapURL: "https://maps.googleapis.com/maps/api/js?key=" + `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}` + "&v=3.exp&libraries=geometry,drawing,places",
-            loadingElement: <div style={{ height: `100%` }} />,
-            containerElement: <div style={{ height: `100%` }} />,
-            mapElement: <div style={{ height: `100%` }} />,
-        }),
-        withScriptjs,
-        withGoogleMap
-    )((props) =>
-        <GoogleMap
-            defaultZoom={18}
-            defaultCenter={REGIONS[this.region]}
+  MyMapComponent = compose(
+    withProps({
+      googleMapURL: "https://maps.googleapis.com/maps/api/js?key=" + `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}` + "&v=3.exp&libraries=geometry,drawing,places",
+      loadingElement: <div style={{ height: `100%` }} />,
+      containerElement: <div style={{ height: `100%` }} />,
+      mapElement: <div style={{ height: `100%` }} />,
+    }),
+    withScriptjs,
+    withGoogleMap
+  )((props) =>
+    <GoogleMap
+      //center={REGIONS[this.region]}
+      defaultZoom={11}
+      defaultCenter={REGIONS.center}
+    >
+       <MarkerClusterer
+          averageCenter
+          enableRetinaIcons
+          gridSize={20}
+          minimumClusterSize={6}
         >
-            {this.addMarkers()}
-        </GoogleMap>
-    )
+          {this.addMarkers()}
+        </MarkerClusterer>
+    </GoogleMap>
+  )
 
-    componentDidMount() {
-        var getAllPanoCoords = async () => {
-            await api.getAllPanoIdAndCoord().then(result => {
-                var coordArr = []
-                let data = result.data.data
-                for (var i = 0; i < data.length; i++) {
-                    coordArr.push({
-                        id: data[i].id,
-                        lat: data[i].coord.lat,
-                        lng: data[i].coord.lng
-                    })
-                }
-                this.setState({
-                    coords: coordArr
-                })
-            })
+  componentDidMount() {
+    var getAllPanoCoords = async () => {
+      await api.getAllPanoIdAndCoord().then(result => {
+        var coordArr = []
+        let data = result.data.data
+        for (var i = 0; i < data.length; i++) {
+          coordArr.push({
+            id: data[i].id,
+            lat: data[i].coord.lat,
+            lng: data[i].coord.lng
+          })
         }
-        getAllPanoCoords()
-    }
-
-    addMarkers() {
-        const { coords } = this.state
-        if (!coords) return
-
-        //this.setBounds()
-        //let map = new Map(this.refs.map,);
-        //(this.props as any).google.maps.fitBounds(this.bounds);
-        return coords.map((coord, index) => {
-            return (
-                <Marker
-                    key={coord.id}
-                    position={{
-                        lat: coord.lat,
-                        lng: coord.lng
-                    }}
-                    onClick={() => {
-                        console.log("onClick");
-                        this.gotoPano(coord.id)
-                    }}
-                />
-            )
+        this.setState({
+          coords: coordArr
         })
+      })
     }
+    getAllPanoCoords()
+  }
 
-    get region() {
-        console.log("get region:",this.props.match);
-        //@ts-ignore
-        return this.props.match ? this.props.match.params.region : 'boston'
-    }
+  addMarkers() {
+    const { coords } = this.state
+    if (!coords) return
+
+    //this.setBounds()
+    //let map = new Map(this.refs.map,);
+    //(this.props as any).google.maps.fitBounds(this.bounds);
+    return coords.map((coord, index) => {
+      return (
+        <Marker
+          key={coord.id}
+          position={{
+            lat: coord.lat,
+            lng: coord.lng
+          }}
+          onClick={() => {
+            this.gotoPano(coord.id)
+          }}
+        />
+      )
+    })
+  }
+
+  get region() {
+    console.log("get region:", this.props.match);
+    //@ts-ignore
+    return this.props.match ? this.props.match.params.region : 'boston'
+  }
 
 
-    gotoPano(id) {
-        // @ts-ignore
-        this.props.history.push(`/viewPano/${id}`);
-        console.log("gotopano:",this.props);
-    }
+  gotoPano(id) {
+    // @ts-ignore
+    this.props.history.push(`/viewPano/${id}`);
+  }
 
-    render() {
-        return (
-            <this.MyMapComponent />
-        )
-    }
+  render() {
+    return (
+      <this.MyMapComponent />
+    )
+  }
+}
+
+export class GMapStore {
+  @observable region:string;
+
 }
 
 export default withRouter(props => {
@@ -255,7 +276,7 @@ export default withRouter(props => {
 
   return (
     <Container show={!!props.match}>
-      <MyFancyComponent {...props} />
+      <GMapComponent {...props} />
     </Container>
   )
 })

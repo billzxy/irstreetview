@@ -18,10 +18,10 @@
 	position: absolute;
 	width: 200px;
 	height: 100px;
-	left: 40px;
-	bottom: 40px;
-	border: 2px solid black;
-  	border-radius: 3px;
+	left: 20px;
+	bottom: 20px;
+	border: 1px solid black;
+  	border-radius: 0px;
 }
 
 .InfoBox {

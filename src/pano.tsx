@@ -33,7 +33,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	currLoc: Location;
 	neighbors: Map<string, NeighborType>;
 	panoPageStore = undefined;
-	panoIdChangeReaction;
+	panoIdChangeReactionDisposer;
 	canvasStyle = {cursor:"default"};	
 
 	constructor(props) {
@@ -134,20 +134,22 @@ class Pano extends Component<PanoProps, PanoState> {
 
 	mouseSelectedArrowMesh:THREE.Mesh;
 
-	
+	setPanoPageStoreIDChangeReaction() {
+		this.panoIdChangeReactionDisposer = reaction(
+			() => this.panoPageStore.id,
+			(id, reaction) => {
+				console.log("change");
+				this.teleportToScene(id);
+			}
+		);
+	}
 
 	loadTexture() {
 		this.texture = this.loader.load(
 			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 			() => {
 				this.panoPageStore = new PanoPageStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0, this.currLoc.id);
-				this.panoIdChangeReaction = reaction(
-					() => this.panoPageStore.id,
-					(id, reaction) => {
-						this.teleportToScene(id);
-						//reaction.dispose();
-					}
-				);
+				this.setPanoPageStoreIDChangeReaction();
 				this.setState({ isLoading: false });
 			},
 			undefined,
@@ -412,7 +414,6 @@ class Pano extends Component<PanoProps, PanoState> {
 		}
 
 		var navigateWithMouse = () => {
-			console.log("navgate w mouse transition");
 			let nArr = [this.n0, this.n1, this.n2];
 			let id = nArr[this.mouseSelectedArrowMesh.userData.neighbor].location.id;
 			transitionToScene(id);
@@ -599,6 +600,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		//RenderCompass();
 
 		var transitionToScene = async (pid) => {
+			this.panoIdChangeReactionDisposer();
 			this.currLoc = this.neighbors.get(pid).location;
 			//await this.currLoc.setAllAttr();
 			this.texture = this.loader.load(
@@ -618,6 +620,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					animateTransition(pid);
 					let {coord, cameraY, id} = this.currLoc;
 					this.panoPageStore.updateValues(coord.lat, coord.lng, cameraY, id);
+					this.setPanoPageStoreIDChangeReaction();
 				},
 				undefined,
 				err => {
@@ -802,7 +805,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					</Canvas>
 				</div>
 				<div>
-					<Minimap panoPageStore={this.panoPageStore} />
+					<Minimap panoPageStore={this.panoPageStore}/>
 				</div>
 			</div>
 		);
@@ -810,4 +813,3 @@ class Pano extends Component<PanoProps, PanoState> {
 }
 
 export default withRouter(Pano);
-

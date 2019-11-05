@@ -125,7 +125,7 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	constructor(props) {
 		super(props);
 		this.state = {
-			showComp: false,
+			showComp: false
 		};
 		this.pStore = (this.props as any).panoPageStore;
 	}

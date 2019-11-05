@@ -5,7 +5,6 @@ import styled from "styled-components";
 import { observable } from "mobx";
 import { observer } from "mobx-react";
 
-import { PanoStore } from "./pano";
 import api from "./api/index";
 
 const StyledMap = styled(Map)`
@@ -71,7 +70,6 @@ export interface Coordinate {
 export interface MapContainerState {
 	showComp: boolean;
 	coords?: Coordinate[];
-	mapStore?: MapStore;
 }
 
 type center = {
@@ -80,9 +78,9 @@ type center = {
 	bearing: string
 }
 
-export interface MapContainerProps extends RouteComponentProps<{MapStore}> {}
+export interface MapContainerProps extends RouteComponentProps<{PanoPageStore}> {}
 
-export class MapStore {
+export class PanoPageStore {
 	@observable lng:number;
 	@observable lat:number;
 	//@observable bearing:number;
@@ -122,17 +120,14 @@ export class MapStore {
 @observer
 class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	
-	panoStore:PanoStore;
-	mStore:MapStore;
+	pStore:PanoPageStore;
 
 	constructor(props) {
 		super(props);
 		this.state = {
-			showComp: false,
-			mapStore: (this.props as any).mapStore
+			showComp: false
 		};
-		this.mStore = (this.props as any).mapStore;
-		this.panoStore = (this.props as any).panoStore;
+		this.pStore = (this.props as any).panoPageStore;
 	}
 	
 	componentDidMount() {
@@ -188,8 +183,8 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 
 	addPegman() {
 		var origin = new (this.props as any).google.maps.Point(8, 9);
-		if(this.mStore.pmanOffsetY){
-			origin = new (this.props as any).google.maps.Point(8, this.mStore.pmanOffsetY);
+		if(this.pStore.pmanOffsetY){
+			origin = new (this.props as any).google.maps.Point(8, this.pStore.pmanOffsetY);
 		}
 		var pegIcon = {
 			url: require(`./assets/rotating.png`),
@@ -198,13 +193,13 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 			anchor: new (this.props as any).google.maps.Point(22, 34)
 		};
 		this.pman = <Marker
-			lid={this.mStore.id}
+			lid={this.pStore.id}
 			position={{
-				lat: this.mStore.lat,
-				lng: this.mStore.lng
+				lat: this.pStore.lat,
+				lng: this.pStore.lng
 			}}
 			icon={pegIcon}
-			key={this.mStore.id}
+			key={this.pStore.id}
 		/>;
 		return this.pman;
 	}
@@ -216,7 +211,7 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 		var icon;
 		var z = 0;
 		return (this.state as any).coords.map((coord, index) => {
-			if ((this.state as any).coords[index].id === this.mStore.id) {
+			if ((this.state as any).coords[index].id === this.pStore.id) {
 				
 			}else{
 				icon = this.dotIcon;
@@ -248,8 +243,8 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	gotoPano(id) {
 		// @ts-ignore
 		//this.props.history.push(`/viewPano/${id}`);
-		//console.log("Update id: "+id);
-		this.panoStore.id = id;
+		console.log("Update id: "+id);
+		this.pStore.id = id;
 	}
 
 	render() {
@@ -260,8 +255,8 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 				ref={(this.props as any).onMapMounted}
 				google={(this.props as any).google}
 				zoom={17}
-				center={{ lat: this.mStore.lat, lng: this.mStore.lng }}
-				initialCenter={{ lat: this.mStore.lat, lng: this.mStore.lng }}
+				center={{ lat: this.pStore.lat, lng: this.pStore.lng }}
+				initialCenter={{ lat: this.pStore.lat, lng: this.pStore.lng }}
 				bounds={this.bounds}
 				onReady={mapHandlerInit}
 				streetViewControl={false}

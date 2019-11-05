@@ -236,7 +236,6 @@ class GMapComponent extends React.PureComponent<MapContainerProps, MapContainerS
             lng: coord.lng
           }}
           onClick={() => {
-            console.log("onClick");
             this.gotoPano(coord.id)
           }}
         />
@@ -254,7 +253,6 @@ class GMapComponent extends React.PureComponent<MapContainerProps, MapContainerS
   gotoPano(id) {
     // @ts-ignore
     this.props.history.push(`/viewPano/${id}`);
-    console.log("gotopano:", this.props);
   }
 
   render() {

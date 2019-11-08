@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom'
 import {HashRouter as Router, Route, Switch, NavLink, Redirect} from 'react-router-dom'
 import { observable, reaction } from "mobx";
 import {Container, Header, Content} from './components/layout'
-import GMap from './gmaps'
+import GMap from './maps'
 import Pano from './pano'
 import './style/App.css'
 
@@ -35,7 +35,7 @@ export class Interface extends Component {
     return (
       <Router>
         <Container>
-          <Header>
+          {<Header>
             {routes.map(r => (
               <NavLink
                 to={r.path}
@@ -46,7 +46,7 @@ export class Interface extends Component {
                 {r.title}
               </NavLink>
             ))}
-          </Header>
+            </Header>}
           <Content>
             <Route path="/maps/:region">
               <GMap />

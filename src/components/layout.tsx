@@ -23,7 +23,7 @@ export const Header = styled.div`
 	align-items: center;
 	background-color: #f8f8f8;
     box-shadow: 2px 2px gray;
-
+	cursor: pointer;
 	& .ir-nav-item {
 		margin-right: 0.5rem;
 		margin-left: 0.5rem;

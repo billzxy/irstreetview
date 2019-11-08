@@ -1,10 +1,11 @@
-import React, { Component, useRef, useEffect } from 'react'
+import React, { useState, Component, useRef, useEffect } from 'react'
 import { withRouter, RouteComponentProps } from 'react-router-dom'
-import { compose, withProps } from "recompose"
-import { withScriptjs, withGoogleMap, GoogleMap, Marker} from "react-google-maps"
+import { compose, withProps, withState, withHandlers } from "recompose"
+import { withScriptjs, withGoogleMap, GoogleMap, Marker,InfoWindow} from "react-google-maps"
 import { observable, reaction } from "mobx";
 import styled from 'styled-components'
 import api from './api/index'
+import { Header } from './components/layout'
 
 const { MarkerClusterer } = require("react-google-maps/lib/components/addons/MarkerClusterer");
 
@@ -50,121 +51,16 @@ export interface MapContainerState {
   coords?: Coordinate[]
 }
 
-export interface MapContainerProps extends RouteComponentProps<{ region?: string, goBack?}> { }
+export interface MapContainerProps extends RouteComponentProps<{ region?: string}> { }
 
-export class MapContainer extends Component<MapContainerProps, MapContainerState> {
-  constructor(props) {
-    super(props)
-    this.state = {
-      coords: []
-    }
-  }
-
-  componentDidMount() {
-    var getAllPanoCoords = async () => {
-      await api.getAllPanoIdAndCoord().then(result => {
-        var coordArr = []
-        let data = result.data.data
-        for (var i = 0; i < data.length; i++) {
-          coordArr.push({
-            id: data[i].id,
-            lat: data[i].coord.lat,
-            lng: data[i].coord.lng
-          })
-        }
-        this.setState({
-          coords: coordArr
-        })
-      })
-    }
-    getAllPanoCoords()
-  }
-
-  bounds = new (this.props as any).google.maps.LatLngBounds()
-
-  setBounds() {
-    const { coords } = this.state
-    if (!coords) return
-
-    for (var i = 0; i < coords.length; i++) {
-      let coord = coords[i]
-      this.bounds.extend(
-        new (this.props as any).google.maps.LatLng({
-          lat: coord.lat,
-          lng: coord.lng
-        })
-      )
-    }
-  }
-
-  addMarkers() {
-    const { coords } = this.state
-    if (!coords) return
-
-    this.setBounds()
-    //let map = new Map(this.refs.map,);
-    //(this.props as any).google.maps.fitBounds(this.bounds);
-    return coords.map((coord, index) => {
-      return (
-        <Marker
-          label={coord.id}
-          position={{
-            lat: coord.lat,
-            lng: coord.lng
-          }}
-          onClick={e => {
-            return this.gotoPano(e.label)
-          }}
-        />
-      )
-    })
-  }
-
-  gotoPano(id) {
-    // @ts-ignore
-    this.props.history.push(`/viewPano/${id}`)
-    //console.log(this.props);
-  }
-
-  goBack() {
-    // @ts-ignore
-    this.props.history.goBack();
-    console.log("go back");
-  }
-
-  get region() {
-    return this.props.match ? this.props.match.params.region : 'boston'
-  }
-
-  render() {
-    return (
-      <StyledMap
-        google={(this.props as any).google}
-        zoom={18}
-        center={REGIONS[this.region]}
-        initialCenter={REGIONS[this.region]}
-        bounds={this.bounds}
-      >
-        <MarkerClusterer
-          averageCenter
-          enableRetinaIcons
-          gridSize={60}
-        >
-          {this.addMarkers()}
-        </MarkerClusterer>
-      </StyledMap>
-    )
-  }
+const MapNavBar = (props) => {
+  return (
+    <Header className="navbar" onClick={ ()=>{ props.onClick({...REGIONS.boston}); }} >
+      {props.children}
+      <span>text</span>
+    </Header>
+  )
 }
-
-/*
-const EnhancedMap = GoogleApiWrapper({
-  apiKey: `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
-  /* 
-    Since we want to have a reference of MapContainer, so we need to pass the ref here.
-  
-})(props => <MapContainer {...props} ref={props.mapRef} />)
-*/
 
 class GMapComponent extends React.PureComponent<MapContainerProps, MapContainerState> {
   state = {
@@ -174,6 +70,18 @@ class GMapComponent extends React.PureComponent<MapContainerProps, MapContainerS
     super(props)
   }
 
+  nbref = React.createRef();
+  ref = React.createRef();
+
+  WMap = React.forwardRef((props, ref) => (
+    <this.MyMapComponent ref={ref} >
+      {props.children}
+    </this.MyMapComponent>
+  ));
+  
+  
+  
+
   MyMapComponent = compose(
     withProps({
       googleMapURL: "https://maps.googleapis.com/maps/api/js?key=" + `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}` + "&v=3.exp&libraries=geometry,drawing,places",
@@ -181,23 +89,62 @@ class GMapComponent extends React.PureComponent<MapContainerProps, MapContainerS
       containerElement: <div style={{ height: `100%` }} />,
       mapElement: <div style={{ height: `100%` }} />,
     }),
-    withScriptjs,
+    withState('zoom', 'onZoomChange', 11),
+    withState('center', 'onCenterChange', 11),
+    withHandlers((props,state) => {
+      const refs = {
+        map: undefined,
+      }
+
+      let z = REGIONS.center;
+
+      return {
+        onMapMounted: () => ref => {
+          refs.map = ref
+          this.ref = ref;
+        },
+        onZoomChanged: ({ onZoomChange }) => () => {
+          //console.log(refs.map.getZoom());
+          //onZoomChange(refs.map.getZoom())
+          //props.setZoom(5);
+          //console.log(props)
+        },
+        onCenterChanged: ({ onCenterChange }) => () => {
+          //console.log(refs.map.getDiv());
+          //onCenterChange(refs.map.getCenter())
+          //refs.map.panTo({lat: 42.45955,
+            //lng: -71.3525});
+          
+        }
+      }
+    }), withScriptjs,
     withGoogleMap
-  )((props) =>
+  )((props) => {
+    const [center, setCenter] = useState(REGIONS.center);
+
+    return (
     <GoogleMap
       //center={REGIONS[this.region]}
       defaultZoom={11}
-      defaultCenter={REGIONS.center}
+      //defaultCenter={REGIONS.center}
+      zoom={props.zoom}
+      ref={props.onMapMounted}
+      center={center}
+      onZoomChanged={props.onZoomChanged}
+      onCenterChanged={props.onCenterChanged}
     >
-       <MarkerClusterer
-          averageCenter
-          enableRetinaIcons
-          gridSize={20}
-          minimumClusterSize={6}
-        >
-          {this.addMarkers()}
-        </MarkerClusterer>
+      <MapNavBar onClick={setCenter}/>
+      <MarkerClusterer
+        averageCenter
+
+        gridSize={20}
+        minimumClusterSize={6}
+      >
+        {this.addMarkers()}
+      </MarkerClusterer>
     </GoogleMap>
+    )
+  }
   )
 
   componentDidMount() {
@@ -223,11 +170,12 @@ class GMapComponent extends React.PureComponent<MapContainerProps, MapContainerS
   addMarkers() {
     const { coords } = this.state
     if (!coords) return
-
+    //
     //this.setBounds()
     //let map = new Map(this.refs.map,);
     //(this.props as any).google.maps.fitBounds(this.bounds);
     return coords.map((coord, index) => {
+      console.log(coord);
       return (
         <Marker
           key={coord.id}
@@ -256,8 +204,9 @@ class GMapComponent extends React.PureComponent<MapContainerProps, MapContainerS
   }
 
   render() {
+    console.log(this.ref);
     return (
-      <this.MyMapComponent />
+      <this.WMap />
     )
   }
 }

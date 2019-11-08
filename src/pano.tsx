@@ -138,7 +138,6 @@ class Pano extends Component<PanoProps, PanoState> {
 		this.panoIdChangeReactionDisposer = reaction(
 			() => this.panoPageStore.id,
 			(id, reaction) => {
-				console.log("change");
 				this.teleportToScene(id);
 			}
 		);

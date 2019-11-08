@@ -1,10 +1,11 @@
 import React, {Component, useRef, useEffect} from 'react'
 import ReactDOM from 'react-dom'
-import {Map, GoogleApiWrapper, Marker, MarkerClusterer} from 'google-maps-react'
+import {Map, GoogleApiWrapper, Marker} from 'google-maps-react'
 import {withRouter, RouteComponentProps} from 'react-router-dom'
 import styled from 'styled-components'
-
 import api from './api/index'
+
+const MarkerClusterer = require('node-js-marker-clusterer');
 
 // I believe there is a bug of google-maps-react
 // as it does not respect the custom style object you pass
@@ -36,6 +37,10 @@ const REGIONS = {
   concord: {
     lat: 42.45955,
     lng: -71.3525
+  },
+  center: {
+    lat: 42.4,
+    lng: -71.2
   }
 }
 
@@ -96,27 +101,22 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
     }
   }
 
-  addMarkers() {
+  addMarkers(map, google) {
     const {coords} = this.state
     if (!coords) return
 
-    this.setBounds()
-    //let map = new Map(this.refs.map,);
-    //(this.props as any).google.maps.fitBounds(this.bounds);
     return coords.map((coord, index) => {
-      return (
-        <Marker
-          lid={coord.id}
-          position={{
-            lat: coord.lat,
-            lng: coord.lng
-          }}
-          onClick={e => {
-            return this.gotoPano(e.lid)
-          }}
-          key={coord.id}
-        />
-      )
+      const marker = new google.maps.Marker({
+        position: { lat: coord.lat, lng: coord.lng },
+        map: map,
+        title: coord.id
+      })
+      
+      google.maps.event.addListener(marker, 'click', () => {
+        this.gotoPano(marker.title);
+      });
+
+      return marker;
     })
   }
 
@@ -136,23 +136,41 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
     return this.props.match ? this.props.match.params.region : 'boston'
   }
 
+  Clusterer = ({map, google}) => {
+    if(!map)
+      return (null)
+    //console.log(map);
+    const mc = new MarkerClusterer(map, this.addMarkers(map, google), {
+      styles: [{
+        width: 53,
+        height: 52,
+        url: require('./assets/mc.png'),
+        textColor: 'white',
+      }],
+      gridSize: 20,
+      minimumClusterSize: 6
+    });
+    return (null);
+  }
+
   render() {
+
     return (
+      
       <StyledMap
         ref={(this.props as any).onMapMounted}
         google={(this.props as any).google}
-        zoom={18}
+        zoom={11}
         center={REGIONS[this.region]}
-        initialCenter={REGIONS[this.region]}
+        initialCenter={REGIONS.center}
         bounds={this.bounds}
       >
-        
-        {this.addMarkers()}
-        
+        <this.Clusterer />
       </StyledMap>
     )
   }
 }
+
 
 const EnhancedMap = GoogleApiWrapper({
   apiKey: `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`

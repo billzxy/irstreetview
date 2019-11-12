@@ -4,6 +4,7 @@ import {Map, GoogleApiWrapper, Marker} from 'google-maps-react'
 import {withRouter, RouteComponentProps} from 'react-router-dom'
 import styled from 'styled-components'
 import api from './api/index'
+import { parse } from 'path'
 
 const MarkerClusterer = require('node-js-marker-clusterer');
 
@@ -44,10 +45,30 @@ const REGIONS = {
   }
 }
 
+const parseNeighborhoodIntoRegion = (neighborhood) => {
+  if(Array.isArray(neighborhood)){
+    return parseNeighborhoodIntoRegion(neighborhood[0]);
+  }
+  switch (neighborhood){
+    case "quincy":
+      return "boston"
+    case "atlave":
+      return "boston";
+    case "caa":
+      return "concord";
+    case "cab":
+      return "concord";
+    case "cdt":
+      return "concord";
+  }
+  return null;
+}
+
 export interface Coordinate {
   id: string | number
   lat: number
   lng: number
+  region: string
 }
 
 export interface MapContainerState {
@@ -57,6 +78,11 @@ export interface MapContainerState {
 export interface MapContainerProps extends RouteComponentProps<{region?: string}> {}
 
 export class MapContainer extends Component<MapContainerProps, MapContainerState> {
+  map;//ref to map instance
+  showGSV=false;
+  isClustererRendered=false;
+  markerClusterer;
+
   constructor(props) {
     super(props)
     this.state = {
@@ -73,7 +99,8 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
           coordArr.push({
             id: data[i].id,
             lat: data[i].coord.lat,
-            lng: data[i].coord.lng
+            lng: data[i].coord.lng,
+            region: parseNeighborhoodIntoRegion( data[i].neighborhood )
           })
         }
         this.setState({
@@ -82,6 +109,28 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
       })
     }
     getAllPanoCoords()
+  }
+
+  componentDidUpdate(prevProps){
+    if(!this.map){
+      return ;
+    }
+    const prevloc = prevProps.location.pathname.split("/")[1];
+    const currAction = this.props.history.action;
+    
+    //-----very specific logic here, please dont not change the order of the following instructions
+    //-----the following logic handles the show/hide of google street view under different use cases and circumstances
+    if(currAction==="PUSH" && prevloc==="viewPano"){//in the case when user is in ir pano view and wants to click on region-bar
+      this.showGSV = false;
+    }
+    
+    if(!this.showGSV){//tells google to render/show google street view or not
+      this.map.streetView.setVisible(false);
+    }
+
+    if(prevloc==="viewPano"){//in the case when user exits/backs from ir pano view
+      this.showGSV = false;
+    }
   }
 
   bounds = new (this.props as any).google.maps.LatLngBounds()
@@ -104,12 +153,12 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
   addMarkers(map, google) {
     const {coords} = this.state
     if (!coords) return
-
+    //console.log(map);
     return coords.map((coord, index) => {
       const marker = new google.maps.Marker({
         position: { lat: coord.lat, lng: coord.lng },
         map: map,
-        title: coord.id
+        title: coord.id+"&"+coord.region
       })
       
       google.maps.event.addListener(marker, 'click', () => {
@@ -120,10 +169,15 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
     })
   }
 
-  gotoPano(id) {
-    // @ts-ignore
-    this.props.history.push(`/viewPano/${id}`)
-    //console.log(this.props);
+  gotoPano(title) {
+    const arr = title.split("&");
+    const id = arr[0];
+    const region = arr[1];
+    if(this.map.streetView.visible){
+      this.showGSV = true;
+    }
+    this.props.history.push(`/maps/${region}`);
+    this.props.history.push(`/viewPano/${id}`);
   }
 
   goBack(){
@@ -137,10 +191,16 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
   }
 
   Clusterer = ({map, google}) => {
+    
+    if(this.isClustererRendered)
+      return (null);
     if(!map)
       return (null)
-    //console.log(map);
-    const mc = new MarkerClusterer(map, this.addMarkers(map, google), {
+    if(this.state.coords.length===0)
+      return (null);
+    
+    this.map = map;
+    this.markerClusterer = new MarkerClusterer(map, this.addMarkers(map, google), {
       styles: [{
         width: 53,
         height: 52,
@@ -150,6 +210,7 @@ export class MapContainer extends Component<MapContainerProps, MapContainerState
       gridSize: 20,
       minimumClusterSize: 6
     });
+    this.isClustererRendered = true;
     return (null);
   }
 

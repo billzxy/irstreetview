@@ -33,6 +33,7 @@ class Arrow {
   mesh: THREE.Mesh
   material: THREE.MeshBasicMaterial
   geometry
+  hitbox
   id: string
 
   constructor() {
@@ -52,8 +53,26 @@ class Arrow {
       new THREE.Face3(5, 0, 4)
     )
 
-    this.material = new THREE.MeshBasicMaterial({color: 'white'})
-    this.mesh = new THREE.Mesh(this.geometry, this.material)
+    this.hitbox = new THREE.Geometry()
+    let margin = 0.3;
+    this.hitbox.vertices.push(
+      new THREE.Vector3(0, 0, 0), // 0
+      new THREE.Vector3(1.5+margin, -2-margin, 0), // 1
+      new THREE.Vector3(1.5+margin, -0.5+margin, 0), // 2
+      new THREE.Vector3(0, 1.5+margin, 0), // 3
+      new THREE.Vector3(-1.5-margin, -0.5+margin, 0), // 4
+      new THREE.Vector3(-1.5-margin, -2-margin, 0) // 5
+    )
+    this.hitbox.faces.push(
+      new THREE.Face3(0, 1, 2),
+      new THREE.Face3(0, 2, 3),
+      new THREE.Face3(4, 0, 3),
+      new THREE.Face3(5, 0, 4),
+      new THREE.Face3(5, 1, 0)
+    )
+
+    //this.material = new THREE.MeshBasicMaterial({color: 'white'})
+    //this.mesh = new THREE.Mesh(this.geometry, this.material)
   }
   onClickHandler() {}
 }

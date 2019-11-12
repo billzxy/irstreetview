@@ -55,8 +55,9 @@ export class Interface extends Component {
                 component={props => ((this.state as any).renderPano ? <Pano {...props} /> : null)}
               />
             </Route>
-            <Redirect exact from="/" to="/maps/concord" />
-            <Redirect exact from="/maps" to="/maps/concord" />
+            <Redirect exact from="/" to="/maps/center" />
+            <Redirect exact from="/maps" to="/maps/center" />
+            <Redirect exact from="/maps/" to="/maps/center" />
           </Content>
         </Container>
       </Router>

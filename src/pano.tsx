@@ -121,6 +121,14 @@ class Pano extends Component<PanoProps, PanoState> {
 	cone1:THREE.Mesh;
 	cone2:THREE.Mesh;
 
+	conevis0:THREE.Mesh;
+	conevis1:THREE.Mesh;
+	conevis2:THREE.Mesh;
+
+	coneg0:THREE.Group;
+	coneg1:THREE.Group;
+	coneg2:THREE.Group;
+
 	pinSphereGeometry = new THREE.SphereGeometry(0.5,16,16);
 	pinNeedleGeometry = new THREE.CylinderGeometry(0.075, 0.025, 3, 10, 1, false);
 	pin0:THREE.Group;
@@ -292,39 +300,58 @@ class Pano extends Component<PanoProps, PanoState> {
 		//rotation
 		this.cone0.rotation.x = -1.5708;
 		this.cone0.rotation.z = (-this.n0.bearing) * Math.PI / 180;
-		this.cone1.visible = false;
-		this.cone2.visible = false;
+		//position
+		this.conevis0.position.z = - arrowSpacing * Math.cos(this.n0.bearing * Math.PI / 180);
+		this.conevis0.position.x = arrowSpacing * Math.sin(this.n0.bearing * Math.PI / 180);
+		//rotation
+		this.conevis0.rotation.x = -1.5708;
+		this.conevis0.rotation.z = (-this.n0.bearing) * Math.PI / 180;
+		
+		this.coneg1.visible = false;
+		this.coneg2.visible = false;
 		//this.cone0.geometry.computeBoundingSphere();
 		
-		if(this.neighbors.size>1){
+		if (this.neighbors.size > 1) {
 			this.n1 = this.neighbors.get(iter.next().value);
-			this.cone1.visible = true;
+			this.coneg1.visible = true;
 			//position
 			this.cone1.position.z = -arrowSpacing * Math.cos(this.n1.bearing * Math.PI / 180);
 			this.cone1.position.x = arrowSpacing * Math.sin(this.n1.bearing * Math.PI / 180);
 			//rotation
 			this.cone1.rotation.x = -1.5708;
 			this.cone1.rotation.z = (-this.n1.bearing) * Math.PI / 180;
+			//position
+			this.conevis1.position.z = - arrowSpacing * Math.cos(this.n1.bearing * Math.PI / 180);
+			this.conevis1.position.x = arrowSpacing * Math.sin(this.n1.bearing * Math.PI / 180);
+			//rotation
+			this.conevis1.rotation.x = -1.5708;
+			this.conevis1.rotation.z = (-this.n1.bearing) * Math.PI / 180;
 			//console.log(this.cone1.rotation.z);
 			//this.cone1.geometry.computeBoundingSphere();
 			//console.log(this.cone1.localToWorld(this.cone1.geometry.boundingSphere.center));
 		}
 		if(this.neighbors.size===3){
 			this.n2 = this.neighbors.get(iter.next().value);
-			this.cone2.visible = true;
+			this.coneg2.visible = true;
 			//position
 			this.cone2.position.z = -arrowSpacing * Math.cos(this.n2.bearing * Math.PI / 180);
 			this.cone2.position.x = arrowSpacing * Math.sin(this.n2.bearing * Math.PI / 180);
 			//rotation
 			this.cone2.rotation.x = -1.5708;
 			this.cone2.rotation.z = (-this.n2.bearing) * Math.PI / 180;
+			//position
+			this.conevis2.position.z = - arrowSpacing * Math.cos(this.n2.bearing * Math.PI / 180);
+			this.conevis2.position.x = arrowSpacing * Math.sin(this.n2.bearing * Math.PI / 180);
+			//rotation
+			this.conevis2.rotation.x = -1.5708;
+			this.conevis2.rotation.z = (-this.n2.bearing) * Math.PI / 180;
 			//this.cone2.geometry.computeBoundingSphere();
 			//console.log(this.cone2.rotation.z);
 		}
 	}
 
 	RenderPano() {
-		var { gl, camera, scene, canvas, raycaster } = useThree();
+		let { gl, camera, scene, canvas, raycaster } = useThree();
 		//var canvas = gl.domElement;  // for react-three-fiber v3.x
 		this.threeCamera = camera;
 		this.threeScene = scene;
@@ -337,43 +364,78 @@ class Pano extends Component<PanoProps, PanoState> {
 		camera.lookAt(0, 0, 0);
 
 		let cone = new Arrow();
-		var conemesh = useRef();
-		var conemesh1 = useRef();
-		var conemesh2 = useRef();
+		let conemesh = useRef();
+		let conemesh1 = useRef();
+		let conemesh2 = useRef();
 		//var mousedir = useRef();
-		var compassPlate = useRef();
+		let compassPlate = useRef();
 
 		this.cone0 = conemesh.current as any;
 		this.cone1 = conemesh1.current as any;
 		this.cone2 = conemesh2.current as any;
 
-		
+		let coneVisible0 = useRef<THREE.Mesh>();
+		this.conevis0 = coneVisible0.current;
+		let coneVisible1 = useRef<THREE.Mesh>();
+		this.conevis1 = coneVisible1.current;
+		let coneVisible2 = useRef<THREE.Mesh>();
+		this.conevis2 = coneVisible2.current;
 
-		var mouse = { x: 0, y: 0 };
+		let conegroup0 = useRef<THREE.Group>();
+		this.coneg0 = conegroup0.current;
+		let conegroup1 = useRef<THREE.Group>();
+		this.coneg1 = conegroup1.current;
+		let conegroup2 = useRef<THREE.Group>();
+		this.coneg2 = conegroup2.current;
+
+
+		let c0Sphere;
+		let c1Sphere;
+		let c2Sphere;
+		let coneBoundingSpheres = [c0Sphere, c1Sphere, c2Sphere];
+
+		let mouse = { x: 0, y: 0 };
 		let arrow = new Arrow();
 		let mouseplateG = useRef();
-		var showMousePlate = true;
-		var isAnimating = false;
+		let showMousePlate = true;
+		let isAnimating = false;
 		let isDraggin = false;
 	
-		var rcObjects = [];
+		let rcObjects = [];
 
-		var planegeo = new THREE.PlaneGeometry(40, 40);
-		var planemat = new THREE.MeshBasicMaterial({ color: "grey", side: THREE.DoubleSide, opacity:0.0, transparent:true });
-		var rcplane = new THREE.Mesh(planegeo, planemat); //not a remotely-controlled plane, but a mathematical plane that involves in raycast
+		let planegeo = new THREE.PlaneGeometry(40, 40);
+		let planemat = new THREE.MeshBasicMaterial({ color: "grey", side: THREE.DoubleSide, opacity:0.0, transparent:true });
+		let rcplane = new THREE.Mesh(planegeo, planemat); //not a remotely-controlled plane, but a mathematical plane that involves in raycast
 		rcplane.rotation.set(-1.5708, 0, 0);
 		rcplane.position.set(0,-1,0);
 		scene.add(rcplane);
-		if (conemesh.current && conemesh1.current && conemesh2.current && compassPlate.current) {
-			rcObjects.push(conemesh.current);
-			rcObjects.push(conemesh1.current);
-			rcObjects.push(conemesh2.current);
+		
+		let getInitialConeBoundingSpheres = () => {
+			this.cone0.geometry.computeBoundingSphere();
+			this.cone1.geometry.computeBoundingSphere();
+			this.cone2.geometry.computeBoundingSphere();
+			c0Sphere = this.cone0.geometry.boundingSphere;
+			c1Sphere = this.cone1.geometry.boundingSphere;
+			c2Sphere = this.cone2.geometry.boundingSphere;
+
+		}
+
+		if (this.cone0 && this.cone1 && this.cone2 && compassPlate.current) {
+			//getInitialConeBoundingSpheres();
+			/*rcObjects.push(c0Sphere);
+			rcObjects.push(c1Sphere);
+			rcObjects.push(c2Sphere);*/
+			rcObjects.push(this.cone0);
+			rcObjects.push(this.cone1);
+			rcObjects.push(this.cone2);
 			rcObjects.push(compassPlate.current);
 			rcObjects.push(rcplane);
 			//rcObjects.push(compassGroup.current);
 		}
 
-		var bsphere = useRef();
+		
+
+		let bsphere = useRef();
 		if(bsphere.current){
 			this.cone0.geometry.computeBoundingSphere();
 			let center1 = this.cone0.geometry.boundingSphere.center;
@@ -382,13 +444,14 @@ class Pano extends Component<PanoProps, PanoState> {
 			coneGroup.current.localToWorld(v1);
 		}
 
-		var distanceToArrowInWorldCoord = (mesh) => {
+		var distanceToArrowInWorldCoord = (mesh, index) => {
 			(mouseplateG.current as any).children[1].geometry.computeBoundingSphere();
 			let center0 = (mouseplateG.current as any).children[1].geometry.boundingSphere.center;
 			let v0 = new Vector3(center0.x,center0.y,center0.z);
 			(mouseplateG.current as any).localToWorld(v0);
 
 			mesh.geometry.computeBoundingSphere();
+			coneBoundingSpheres[index] = mesh.geometry.boundinSphere;
 			let center1 = mesh.geometry.boundingSphere.center;
 			let v1 = new Vector3(center1.x,center1.y,center1.z);
 			mesh.localToWorld(v1);
@@ -401,11 +464,11 @@ class Pano extends Component<PanoProps, PanoState> {
 				return;
 			let arr = [this.cone0, this.cone1, this.cone2];
 			let dist = new Map<number, THREE.Mesh>();
-			for(let cone of arr){
-				if(!cone.visible){
+			for(let i=0; i<arr.length; i++){
+				if(!arr[i].parent.visible){
 					continue;
 				}
-				dist.set( distanceToArrowInWorldCoord(cone), cone );
+				dist.set( distanceToArrowInWorldCoord(arr[i], i), arr[i] );
 			}
 			let min = Math.min(...dist.keys());
 			(mouseplateG.current as any).rotation.z = dist.get(min).rotation.z;
@@ -419,6 +482,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		}
 
 		var onMouseMove2 = ( event ) => {
+			if(mouseDown) return;
 			if(mouseplateG.current){
 				event.preventDefault();
 				mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -428,7 +492,7 @@ class Pano extends Component<PanoProps, PanoState> {
 				if (intersects.length > 0) {
 					var intersect = intersects[0];
 					//console.log( intersects[ 0 ]);
-					if( intersects.length === 1){//intersect.object===rcplane){
+					if( intersects.length === 1 ){//intersect.object===rcplane){
 						//console.log(compassGroup.current);
 						(mouseplateG.current as any).visible = true;
 						(mouseplateG.current as any).position.copy(intersect.point).add(new THREE.Vector3(0, 0.01, 0));
@@ -492,7 +556,9 @@ class Pano extends Component<PanoProps, PanoState> {
         }
         
 		var rotateScene = (deltaX) => {
-			isDraggin = true;
+			if(deltaX!==0){
+				isDraggin = true;
+			}
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
 			this.panoPageStore.updatePegmanOffset(camera.rotation.y);
@@ -628,7 +694,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			);
 		};
 		
-        if(conemesh.current&&conemesh1.current&&conemesh2.current){
+        if(this.cone0 && this.cone1 && this.cone2){
 			this.RenderArrows();
         }
 		var coneGroup = useRef();
@@ -680,42 +746,72 @@ class Pano extends Component<PanoProps, PanoState> {
 					ref={coneGroup}
 					scale={[0.2, 0.2, 0.2]}
 				>
-					<mesh //First Arrow
-						userData={{neighbor:0}}
+					<group //-----------------FIRST ARROW -------------------//
+						onPointerOver={e => {setChildrenOpacity(e.object.children, 0.9); this.toggleCursor(true);}}
+						onPointerOut={e => {setChildrenOpacity(e.object.children, 0.65); this.toggleCursor(false);}}
 						onClick={() => {
 							transitionToScene(this.n0.location.id); /*this.currLoc.updateCalibration(camera)*/
 						}}
-						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
-						onPointerOut={e => {(e.object as any).material.opacity=0.65;}}
-						ref={conemesh}
-						geometry={cone.geometry}
+						ref={conegroup0}
 					>
-						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
-					</mesh>
-					<mesh //Second Arrow
-						userData={{neighbor:1}}
+						<mesh //First Arrow Hitbox
+							userData={{ neighbor: 0 }}
+							ref={conemesh}
+							geometry={cone.hitbox}
+						>
+							<meshBasicMaterial attach="material" color="blue" opacity={0.5} transparent={true} visible={false} />
+						</mesh>
+						<mesh //First Arrow Visible
+							geometry={cone.geometry}
+							ref={coneVisible0}
+						> 
+							<meshBasicMaterial attach="material" color="white" opacity={0.65} transparent={true} />
+						</mesh>
+					</group>
+					<group //----------------SECOND ARROW ------------------------//
+						onPointerOver={e => {setChildrenOpacity(e.object.children, 0.9); this.toggleCursor(true);}}
+						onPointerOut={e => {setChildrenOpacity(e.object.children, 0.65); this.toggleCursor(false);}}
 						onClick={() => {
-							transitionToScene(this.n1.location.id);
+							transitionToScene(this.n1.location.id); /*this.currLoc.updateCalibration(camera)*/
 						}}
-						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
-						onPointerOut={e => {(e.object as any).material.opacity=0.65;}}
-                        ref={conemesh1}
-                        geometry={cone.geometry}
-                    >
-                        <meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true}/>
-                    </mesh>
-					<mesh //Third Arrow
-						userData={{neighbor:2}}
-						onClick={() => {
-							transitionToScene(this.n2.location.id);
-						}}
-						onPointerOver={e => {(e.object as any).material.opacity=0.9;}}
-						onPointerOut={e => { (e.object as any).material.opacity = 0.65; }}
-						ref={conemesh2}
-						geometry={cone.geometry}
+						ref={conegroup1}
 					>
-						<meshBasicMaterial attach="material" color="white" opacity={0.5} transparent={true} />
-					</mesh>
+						<mesh //Second Arrow Hitbox
+							userData={{ neighbor: 1 }}
+							ref={conemesh1}
+							geometry={cone.hitbox}
+						>
+							<meshBasicMaterial attach="material" color="blue" opacity={0.5} transparent={true} visible={false} />
+						</mesh>
+						<mesh //Second Arrow Visible
+							geometry={cone.geometry}
+							ref={coneVisible1}
+						> 
+							<meshBasicMaterial attach="material" color="white" opacity={0.65} transparent={true} />
+						</mesh>
+					</group>
+					<group //-----------------THIRD ARROW ----------------------- //
+						onClick={() => {
+								transitionToScene(this.n2.location.id);
+						}}
+						onPointerOver={e => {setChildrenOpacity(e.object.children, 0.9); this.toggleCursor(true);}}
+						onPointerOut={e => {setChildrenOpacity(e.object.children, 0.65); this.toggleCursor(false);}}
+						ref={conegroup2}
+					>
+						<mesh //Third Arrow Hitbox
+							userData={{ neighbor: 2 }}
+							ref={conemesh2}
+							geometry={cone.hitbox}
+						>
+							<meshBasicMaterial attach="material" color="blue" opacity={0.5} transparent={true} visible={false} />
+						</mesh>
+						<mesh //Second Arrow Visible
+							geometry={cone.geometry}
+							ref={coneVisible2}
+						> 
+							<meshBasicMaterial attach="material" color="white" opacity={0.65} transparent={true} />
+						</mesh>
+					</group>
 					
 					
 				</group>

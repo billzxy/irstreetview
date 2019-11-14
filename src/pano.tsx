@@ -10,6 +10,7 @@ import Minimap, {PanoPageStore} from "./components/pano/minimap"
 import { Location } from "./components/pano/location";
 import { Arrow, Cylinder } from "./components/pano/shapes";
 import Spinner from "./components/spinner";
+import Compass from "./components/pano/compass";
 import { observable, reaction } from "mobx";
 import { Vector3 } from "three";
 //import { observer } from "mobx-react";
@@ -428,7 +429,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			rcObjects.push(this.cone0);
 			rcObjects.push(this.cone1);
 			rcObjects.push(this.cone2);
-			rcObjects.push(compassPlate.current);
+			//rcObjects.push(compassPlate.current);
 			rcObjects.push(rcplane);
 			//rcObjects.push(compassGroup.current);
 		}
@@ -821,9 +822,10 @@ class Pano extends Component<PanoProps, PanoState> {
 					ref={compassGroup}
 					position={[0,0,-3]}
 					scale={[0.3, 0.3, 0.3]}
+					visible={false}
 				>
 					<mesh //Compass Plate 
-						onClick={() => this.CameraLookNorth(camera)}
+						//onClick={() => this.CameraLookNorth(camera)}
 						geometry={new THREE.CircleGeometry(0.4, 100, 0)}
 						ref={compassPlate}	
 					>
@@ -901,7 +903,9 @@ class Pano extends Component<PanoProps, PanoState> {
 				</div>
 				<div>
 					<Minimap panoPageStore={this.panoPageStore}/>
+					
 				</div>
+				<div><Compass panoPageStore={this.panoPageStore}/></div>
 			</div>
 		);
 	}

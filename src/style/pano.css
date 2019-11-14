@@ -24,6 +24,15 @@
   	border-radius: 0px;
 }
 
+#compassDom {
+	z-index: 2;
+	position: absolute;
+	height: 95px;
+	right: 20px;
+	bottom: 20px;
+	transform: rotate(-60deg);
+}
+
 .InfoBox {
 	z-index: 2;
 	position: absolute;

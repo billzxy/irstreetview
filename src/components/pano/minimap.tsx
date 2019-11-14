@@ -86,12 +86,14 @@ export class PanoPageStore {
 	//@observable bearing:number;
 	@observable id:string;
 	@observable pmanOffsetY:number;
+	@observable cameraY:number;
 
 	constructor(lat, lng, cameraY, id){
 		this.lng = lng;
 		this.lat = lat;
 		//this.bearing = this.cameraYtoAbsRadian( cameraY );
 		this.id = id;
+		this.cameraY = cameraY;
 		this.pmanOffsetY = this.setPegmanRotationOffsetYFromCameraY(cameraY);
 	}
 
@@ -100,10 +102,12 @@ export class PanoPageStore {
 		this.lat = lat;
 		//this.bearing = this.cameraYtoAbsRadian( cameraY );
 		this.id = id;
+		this.cameraY = cameraY;
 		this.pmanOffsetY = this.setPegmanRotationOffsetYFromCameraY(cameraY);
 	}
 
 	updatePegmanOffset(cameraY){
+		this.cameraY = cameraY;
 		this.pmanOffsetY = this.setPegmanRotationOffsetYFromCameraY(cameraY);
 	}
 

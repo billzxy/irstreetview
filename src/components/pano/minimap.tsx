@@ -87,6 +87,7 @@ export class PanoPageStore {
 	@observable id:string;
 	@observable pmanOffsetY:number;
 	@observable cameraY:number;
+	@observable reset:boolean;
 
 	constructor(lat, lng, cameraY, id){
 		this.lng = lng;

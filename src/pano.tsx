@@ -35,6 +35,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	neighbors: Map<string, NeighborType>;
 	panoPageStore = undefined;
 	panoIdChangeReactionDisposer;
+	panoViewDirectionResetReactionDisposer;
 	canvasStyle = {cursor:"default"};	
 
 	constructor(props) {
@@ -152,12 +153,25 @@ class Pano extends Component<PanoProps, PanoState> {
 		);
 	}
 
+	setCameraResetReaction() {
+        this.panoViewDirectionResetReactionDisposer = reaction(
+            () => this.panoPageStore.reset,
+            (reset, reaction) => {
+				if(reset===true){
+					this.CameraLookNorth(this.threeCamera);
+				}
+				this.panoPageStore.reset = false;
+            }
+        );
+    }
+
 	loadTexture() {
 		this.texture = this.loader.load(
 			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 			() => {
 				this.panoPageStore = new PanoPageStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0, this.currLoc.id);
 				this.setPanoPageStoreIDChangeReaction();
+				this.setCameraResetReaction();
 				this.setState({ isLoading: false });
 			},
 			undefined,
@@ -203,6 +217,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	}*/
 
 	CameraLookNorth(camera) {
+		this.panoViewDirectionResetReactionDisposer();
 		var rotBegin = {
 			at: camera.rotation.y
 		};
@@ -218,6 +233,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		tweenRot.onComplete(() => {
 			camera.rotation.y = 0;
 			this.panoPageStore.updatePegmanOffset(0.0);
+			this.setCameraResetReaction();
 		});
 		tweenRot.start();
 	}

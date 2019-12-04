@@ -12,10 +12,23 @@ export default class Compass extends Component<{panoPageStore},{}>{
     }
 
     compassRotationReactionDisposer;
-    svgSrc = require("../../assets/viewPano/compass.svg");
+    cBaseSrc = require("../../assets/viewPano/compassBase.svg");
+    cDiamondSrc = require("../../assets/viewPano/compassDiamond.svg");
+    compassElement;
 
     componentDidMount(){
         this.setCompassRotationReaction();
+        this.compassHandlerInit();
+    }
+
+    compassHandlerInit = () => {
+        this.compassElement = document.getElementById("compassDiamond");
+        this.compassElement.addEventListener("mouseup", e => this.compassOnClick(e), false);
+    }
+
+    compassOnClick = (e) => {
+        e.preventDefault();
+        this.props.panoPageStore.reset = true;
     }
 
     setCompassRotationReaction() {
@@ -30,25 +43,30 @@ export default class Compass extends Component<{panoPageStore},{}>{
     CompassElement = () => {
         return (
             <div>
-                <img src={this.svgSrc} alt="Compass" />
+                <div id="compassBase">
+                    <img src={this.cBaseSrc} alt="Compass" />
+                </div>
+                <div id="compassDiamond">
+                    <img src={this.cDiamondSrc} alt="Compass" />
+                </div>
             </div>
         );
     }
+
 
     RotateCompass = (cameraY) => {
         var deg = Math.ceil(-cameraY*180/Math.PI);
 		if(deg<0){
 			deg = 360+deg;
         }
-        document.getElementById("compassDom").style.transform = `rotate(${deg-60}deg)`;
-        console.log(deg);
+        document.getElementById("compassDiamond").style.transform = `rotate(${deg}deg)`;
     }
 
     render() {
         return (
-            <div id="compassDom" > 
+            <> 
                 <this.CompassElement /> 
-            </div>
+            </>
         )
     }
 }

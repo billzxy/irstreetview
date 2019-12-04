@@ -24,13 +24,22 @@
   	border-radius: 0px;
 }
 
-#compassDom {
+#compassBase {
 	z-index: 2;
 	position: absolute;
-	height: 95px;
+	height: 100px;
+	width: 100px;
 	right: 20px;
 	bottom: 20px;
-	transform: rotate(-60deg);
+}
+
+#compassDiamond {
+	z-index: 3;
+	position: absolute;
+	height: 100px;
+	width: 100px;
+	right: 20px;
+	bottom: 20px;
 }
 
 .InfoBox {

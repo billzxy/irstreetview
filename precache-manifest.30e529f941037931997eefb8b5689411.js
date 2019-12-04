@@ -1,27 +1,31 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "0b488a0563bf9c8f778d1264bd209de6",
+    "revision": "0c9bbf958324898a9db8c6a96103e1a7",
     "url": "/irstreetview/index.html"
   },
   {
-    "revision": "aa0edafa4e71f4934ae2",
-    "url": "/irstreetview/static/css/main.05f6a8ee.chunk.css"
+    "revision": "a14f53709b0087d1aeb6",
+    "url": "/irstreetview/static/css/main.1bd7e59a.chunk.css"
   },
   {
-    "revision": "98d28edfb3aca0845de8",
-    "url": "/irstreetview/static/js/2.4bab1162.chunk.js"
+    "revision": "f594c4e3310b72d0fd41",
+    "url": "/irstreetview/static/js/2.9a9b1ca3.chunk.js"
   },
   {
-    "revision": "aa0edafa4e71f4934ae2",
-    "url": "/irstreetview/static/js/main.9ff3cfe4.chunk.js"
+    "revision": "a14f53709b0087d1aeb6",
+    "url": "/irstreetview/static/js/main.1f5d808d.chunk.js"
   },
   {
     "revision": "eeb886a1fd84c33d7dd8",
     "url": "/irstreetview/static/js/runtime~main.a142e824.js"
   },
   {
-    "revision": "17996e69835fbd948f83b8a32c8535a7",
-    "url": "/irstreetview/static/media/compass.17996e69.svg"
+    "revision": "aa7ec710f8afb0b2bab8e2229b06a8de",
+    "url": "/irstreetview/static/media/compassBase.aa7ec710.svg"
+  },
+  {
+    "revision": "01b956a55b1e0f4903be4d993aa1baac",
+    "url": "/irstreetview/static/media/compassDiamond.01b956a5.svg"
   },
   {
     "revision": "072de3d6f2628a2292440adc5d058765",

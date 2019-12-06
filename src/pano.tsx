@@ -119,6 +119,8 @@ class Pano extends Component<PanoProps, PanoState> {
 	threeCamera = undefined;
 	threeScene = undefined;
 
+	sceneChangeLock = false;
+
 	cone0:THREE.Mesh;
 	cone1:THREE.Mesh;
 	cone2:THREE.Mesh;
@@ -227,8 +229,9 @@ class Pano extends Component<PanoProps, PanoState> {
 		var tweenRot = new TWEEN.Tween(rotBegin)
 			.to(rotEnd, 750)
 			.easing(TWEEN.Easing.Quadratic.InOut);
-		tweenRot.onUpdate(function() {
+		tweenRot.onUpdate(() => {
 			camera.rotation.y = rotBegin.at;
+			this.panoPageStore.updatePegmanOffset(camera.rotation.y);
 		});
 		tweenRot.onComplete(() => {
 			camera.rotation.y = 0;
@@ -239,6 +242,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	}
 
 	teleportToScene = async (id) => {
+		this.sceneChangeLock = true;
 		//console.log("Teleporting to: "+id);
 		this.currLoc = new Location(id);
 		await this.currLoc.setAllAttr().then(()=>{
@@ -300,6 +304,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			this.tempcylindermesh = undefined;
 			this.tempcylindergeometry.scale(-1,1,1);
 			await this.setNeighbors().then(this.RenderArrows);
+			this.sceneChangeLock = false;
 		});
 		this.cylindermaterial.transparent = true;
 		crossfade.start();
@@ -622,8 +627,11 @@ class Pano extends Component<PanoProps, PanoState> {
 			var tweenRot = new TWEEN.Tween(rotBegin)
 				.to(rotEnd, 500)
 				.easing(TWEEN.Easing.Quadratic.InOut);
-			tweenRot.onUpdate(function() {
+			//console.log("begin: ",rotBegin," end: ",rotEnd);
+			tweenRot.onUpdate(() => {
 				(camera as any).rotation.y = rotBegin.at;
+				this.panoPageStore.updatePegmanOffset(camera.rotation.y);
+				//console.log(this.threeCamera.rotation.y);
 			});
 			tweenRot.onComplete(() => {
 				camera.rotation.y = (-this.neighbors.get(id).bearing * Math.PI) / 180;
@@ -662,7 +670,7 @@ class Pano extends Component<PanoProps, PanoState> {
                 this.cylindermesh.rotation.y = this.currLoc.calibration;
                 this.cylindermaterial.transparent = false;
                 this.cylindermaterial.opacity = 1.0;
-
+				//console.log("b1");
                 scene.remove(this.tempcylindermesh);
                 this.tempcylindermesh.geometry.dispose();
                 this.tempcylindermesh.material.dispose();
@@ -671,6 +679,8 @@ class Pano extends Component<PanoProps, PanoState> {
 				isAnimating = false;
 				(mouseplateG.current as any).visible = true;
 				await this.setNeighbors().then(this.RenderArrows);//.then(()=>{this.InitNeighborPins()});
+				this.sceneChangeLock = false;
+				//console.log("b2");
 			});
             tweenRot.chain(tweenZoom);
             this.cylindermaterial.transparent = true;
@@ -682,6 +692,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		//RenderCompass();
 
 		var transitionToScene = async (pid) => {
+			this.sceneChangeLock = true;
 			this.panoIdChangeReactionDisposer();
 			this.currLoc = this.neighbors.get(pid).location;
 			//await this.currLoc.setAllAttr();
@@ -698,8 +709,10 @@ class Pano extends Component<PanoProps, PanoState> {
                     );
                     this.tempcylindergeometry.scale(-1, 1, 1);
                     this.tempcylindermesh.rotation.y = this.currLoc.calibration;
-                    scene.add(this.tempcylindermesh);
+					scene.add(this.tempcylindermesh);
+					//console.log("a");
 					animateTransition(pid);
+					//console.log("c");
 					let {coord, cameraY, id} = this.currLoc;
 					this.panoPageStore.updateValues(coord.lat, coord.lng, cameraY, id);
 					this.setPanoPageStoreIDChangeReaction();
@@ -766,15 +779,18 @@ class Pano extends Component<PanoProps, PanoState> {
 					<group //-----------------FIRST ARROW -------------------//
 						onPointerOver={e => {setChildrenOpacity(e.object.children, 0.9); this.toggleCursor(true);}}
 						onPointerOut={e => {setChildrenOpacity(e.object.children, 0.65); this.toggleCursor(false);}}
-						onClick={() => {
-							transitionToScene(this.n0.location.id); /*this.currLoc.updateCalibration(camera)*/
-						}}
+						
 						ref={conegroup0}
 					>
 						<mesh //First Arrow Hitbox
 							userData={{ neighbor: 0 }}
 							ref={conemesh}
 							geometry={cone.hitbox}
+							onClick={() => {
+								if(!this.sceneChangeLock){
+									transitionToScene(this.n0.location.id); /*this.currLoc.updateCalibration(camera)*/
+								}
+							}}
 						>
 							<meshBasicMaterial attach="material" color="blue" opacity={0.5} transparent={true} visible={false} />
 						</mesh>
@@ -788,15 +804,18 @@ class Pano extends Component<PanoProps, PanoState> {
 					<group //----------------SECOND ARROW ------------------------//
 						onPointerOver={e => {setChildrenOpacity(e.object.children, 0.9); this.toggleCursor(true);}}
 						onPointerOut={e => {setChildrenOpacity(e.object.children, 0.65); this.toggleCursor(false);}}
-						onClick={() => {
-							transitionToScene(this.n1.location.id); /*this.currLoc.updateCalibration(camera)*/
-						}}
+						
 						ref={conegroup1}
 					>
 						<mesh //Second Arrow Hitbox
 							userData={{ neighbor: 1 }}
 							ref={conemesh1}
 							geometry={cone.hitbox}
+							onClick={() => {
+								if(!this.sceneChangeLock){
+									transitionToScene(this.n1.location.id); /*this.currLoc.updateCalibration(camera)*/
+								}
+							}}
 						>
 							<meshBasicMaterial attach="material" color="blue" opacity={0.5} transparent={true} visible={false} />
 						</mesh>
@@ -808,9 +827,7 @@ class Pano extends Component<PanoProps, PanoState> {
 						</mesh>
 					</group>
 					<group //-----------------THIRD ARROW ----------------------- //
-						onClick={() => {
-								transitionToScene(this.n2.location.id);
-						}}
+						
 						onPointerOver={e => {setChildrenOpacity(e.object.children, 0.9); this.toggleCursor(true);}}
 						onPointerOut={e => {setChildrenOpacity(e.object.children, 0.65); this.toggleCursor(false);}}
 						ref={conegroup2}
@@ -819,6 +836,11 @@ class Pano extends Component<PanoProps, PanoState> {
 							userData={{ neighbor: 2 }}
 							ref={conemesh2}
 							geometry={cone.hitbox}
+							onClick={() => {
+								if(!this.sceneChangeLock){
+									transitionToScene(this.n2.location.id);
+								}
+							}}
 						>
 							<meshBasicMaterial attach="material" color="blue" opacity={0.5} transparent={true} visible={false} />
 						</mesh>
@@ -861,7 +883,7 @@ class Pano extends Component<PanoProps, PanoState> {
 				<group
 					ref={mouseplateG}
 					rotation={[-1.5708, 0, 0]}
-					onPointerUp={()=>{if(!isDraggin){ navigateWithMouse(); }}}
+					
 				>
 					<mesh
 						geometry={arrow.geometry}
@@ -873,6 +895,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					</mesh>
 					<mesh
 						geometry={new THREE.CircleGeometry(0.4, 100, 0)}
+						onPointerUp={()=>{if(!isDraggin && !this.sceneChangeLock){ navigateWithMouse(); }}}
 					>
 						<meshBasicMaterial attach="material" color="white" opacity={0.7} transparent={true} />
 					</mesh>

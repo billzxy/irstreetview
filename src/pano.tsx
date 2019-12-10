@@ -22,7 +22,9 @@ interface PanoProps extends RouteComponentProps<{ id?: string, position? }> {
 	lid: string;
 }
 
-type PanoState = { isLoading: boolean };
+type PanoState = { 
+	isLoading: boolean
+};
 type NeighborType = {
 	location: Location;
 	distance: number;
@@ -37,6 +39,49 @@ class Pano extends Component<PanoProps, PanoState> {
 	panoIdChangeReactionDisposer;
 	panoViewDirectionResetReactionDisposer;
 	canvasStyle = {cursor:"default"};	
+	loaderSpinnerElem = undefined;
+
+	//Flags and locks
+	sceneChangeLock = false;
+
+	//THREEjs objects
+	cylindergeometry = new THREE.CylinderBufferGeometry(20, 20, 15, 100, 1, true);
+	cylindermaterial = undefined;
+	cylindermesh = undefined;
+	texture = undefined;
+	loader = new THREE.TextureLoader();
+	lines = [];
+	
+    tempcylindergeometry = new THREE.CylinderBufferGeometry(21, 21, 15, 100, 1, true);
+	tempcylindermaterial = undefined;
+	tempcylindermesh = undefined;
+	threeCamera = undefined;
+	threeScene = undefined;
+
+	cone0:THREE.Mesh;
+	cone1:THREE.Mesh;
+	cone2:THREE.Mesh;
+
+	conevis0:THREE.Mesh;
+	conevis1:THREE.Mesh;
+	conevis2:THREE.Mesh;
+
+	coneg0:THREE.Group;
+	coneg1:THREE.Group;
+	coneg2:THREE.Group;
+
+	pinSphereGeometry = new THREE.SphereGeometry(0.5,16,16);
+	pinNeedleGeometry = new THREE.CylinderGeometry(0.075, 0.025, 3, 10, 1, false);
+	pin0:THREE.Group;
+	pin1:THREE.Group;
+	pin2:THREE.Group;
+
+	//Neighbors
+	n0:NeighborType;
+	n1:NeighborType;
+	n2:NeighborType;
+
+	mouseSelectedArrowMesh:THREE.Mesh;
 
 	constructor(props) {
 		super(props);
@@ -104,47 +149,6 @@ class Pano extends Component<PanoProps, PanoState> {
 			this.canvasStyle = {cursor:"default"}
 		}
 	}
-
-	//THREEjs objects
-	cylindergeometry = new THREE.CylinderBufferGeometry(20, 20, 15, 100, 1, true);
-	cylindermaterial = undefined;
-	cylindermesh = undefined;
-	texture = undefined;
-	loader = new THREE.TextureLoader();
-	lines = [];
-	
-    tempcylindergeometry = new THREE.CylinderBufferGeometry(21, 21, 15, 100, 1, true);
-	tempcylindermaterial = undefined;
-	tempcylindermesh = undefined;
-	threeCamera = undefined;
-	threeScene = undefined;
-
-	sceneChangeLock = false;
-
-	cone0:THREE.Mesh;
-	cone1:THREE.Mesh;
-	cone2:THREE.Mesh;
-
-	conevis0:THREE.Mesh;
-	conevis1:THREE.Mesh;
-	conevis2:THREE.Mesh;
-
-	coneg0:THREE.Group;
-	coneg1:THREE.Group;
-	coneg2:THREE.Group;
-
-	pinSphereGeometry = new THREE.SphereGeometry(0.5,16,16);
-	pinNeedleGeometry = new THREE.CylinderGeometry(0.075, 0.025, 3, 10, 1, false);
-	pin0:THREE.Group;
-	pin1:THREE.Group;
-	pin2:THREE.Group;
-
-	//Neighbors
-	n0:NeighborType;
-	n1:NeighborType;
-	n2:NeighborType;
-
-	mouseSelectedArrowMesh:THREE.Mesh;
 
 	setPanoPageStoreIDChangeReaction() {
 		this.panoIdChangeReactionDisposer = reaction(
@@ -243,12 +247,14 @@ class Pano extends Component<PanoProps, PanoState> {
 
 	teleportToScene = async (id) => {
 		this.sceneChangeLock = true;
+		this.loaderSpinnerElem.style.visibility = "visible";
 		//console.log("Teleporting to: "+id);
 		this.currLoc = new Location(id);
 		await this.currLoc.setAllAttr().then(()=>{
 			this.texture = this.loader.load(
 				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 				() => {//onComplete
+					this.loaderSpinnerElem.style.visibility = "hidden";
 					this.tempcylindermaterial = new THREE.MeshBasicMaterial({
 						map: this.texture,
 						side: THREE.DoubleSide
@@ -308,6 +314,14 @@ class Pano extends Component<PanoProps, PanoState> {
 		});
 		this.cylindermaterial.transparent = true;
 		crossfade.start();
+	}
+
+	RenderSpinner = () => {
+		return (
+			<div className={"spinner-container"}>
+				<Spinner width={100} height={100} />
+			</div>
+		)
 	}
 
 	RenderArrows = () => {
@@ -373,6 +387,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	}
 
 	RenderPano() {
+		this.loaderSpinnerElem = document.getElementById("trans-spinner");
 		let { gl, camera, scene, canvas, raycaster } = useThree();
 		//var canvas = gl.domElement;  // for react-three-fiber v3.x
 		this.threeCamera = camera;
@@ -578,6 +593,8 @@ class Pano extends Component<PanoProps, PanoState> {
         }
         
 		var rotateScene = (deltaX) => {
+			if(this.sceneChangeLock)
+				return;
 			if(deltaX!==0){
 				isDraggin = true;
 			}
@@ -693,12 +710,14 @@ class Pano extends Component<PanoProps, PanoState> {
 
 		var transitionToScene = async (pid) => {
 			this.sceneChangeLock = true;
+			this.loaderSpinnerElem.style.visibility = "visible";
 			this.panoIdChangeReactionDisposer();
 			this.currLoc = this.neighbors.get(pid).location;
 			//await this.currLoc.setAllAttr();
 			this.texture = this.loader.load(
 				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
 				() => {//onComplete
+					this.loaderSpinnerElem.style.visibility = "hidden";
                     this.tempcylindermaterial = new THREE.MeshBasicMaterial({
                         map: this.texture,
                         side: THREE.DoubleSide
@@ -934,19 +953,21 @@ class Pano extends Component<PanoProps, PanoState> {
 				<Spinner width={100} height={100} />
 			</div>
 		) : (
-			<div className="Pano-container">
-				<div className="Pano-canvas" style={this.canvasStyle}>
-					<Canvas>
-						<this.RenderPano />
-					</Canvas>
+				<div className="Pano-container">
+					<div className="Pano-canvas" style={this.canvasStyle}>
+						<Canvas>
+							<this.RenderPano />
+						</Canvas>
+					</div>
+					<div>
+						<Minimap panoPageStore={this.panoPageStore} />
+					</div>
+					<div><Compass panoPageStore={this.panoPageStore} /></div>
+					<div id="trans-spinner" style={ {visibility:"hidden"} }>
+						<this.RenderSpinner />
+					</div>
 				</div>
-				<div>
-					<Minimap panoPageStore={this.panoPageStore}/>
-					
-				</div>
-				<div><Compass panoPageStore={this.panoPageStore}/></div>
-			</div>
-		);
+			);
 	}
 }
 

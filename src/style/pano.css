@@ -29,8 +29,8 @@
 	position: absolute;
 	height: 100px;
 	width: 100px;
-	right: 20px;
-	bottom: 20px;
+	right: 0px;
+	bottom: 110px;
 	cursor: pointer;
 }
 
@@ -39,9 +39,30 @@
 	position: absolute;
 	height: 100px;
 	width: 100px;
-	right: 20px;
-	bottom: 20px;
+	right: 0px;
+	bottom: 110px;
 	cursor: pointer;
+}
+
+#zoomerBase {
+	z-index: 2;
+	position: absolute;
+	right: 30px;
+	bottom: 20px;
+}
+
+#zoomerIn {
+	z-index: 4;
+	position: absolute;
+	right: 30px;
+	bottom: 20px;
+}
+
+#zoomerOut {
+	z-index: 5;
+	position: absolute;
+	right: 30px;
+	bottom: 20px;
 }
 
 #trans-spinner {

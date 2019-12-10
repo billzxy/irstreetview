@@ -6,11 +6,13 @@ import { withRouter, RouteComponentProps } from "react-router-dom";
 import { disableBodyScroll } from 'body-scroll-lock';
 
 import "./style/pano.css";
-import Minimap, {PanoPageStore} from "./components/pano/minimap"
+import Minimap from "./components/pano/minimap"
+import PanoPageStore from "./components/pano/pageStore"
 import { Location } from "./components/pano/location";
 import { Arrow, Cylinder } from "./components/pano/shapes";
 import Spinner from "./components/spinner";
 import Compass from "./components/pano/compass";
+import ZoomController from "./components/pano/zoomer";
 import { observable, reaction } from "mobx";
 import { Vector3 } from "three";
 //import { observer } from "mobx-react";
@@ -29,6 +31,12 @@ type NeighborType = {
 	location: Location;
 	distance: number;
 	bearing: number;
+};
+
+const zoomLevelFov = {
+	0:40,
+	1:35,
+	3:30
 };
 
 class Pano extends Component<PanoProps, PanoState> {
@@ -470,8 +478,6 @@ class Pano extends Component<PanoProps, PanoState> {
 			//rcObjects.push(compassGroup.current);
 		}
 
-		
-
 		let bsphere = useRef();
 		if(bsphere.current){
 			this.cone0.geometry.computeBoundingSphere();
@@ -712,6 +718,9 @@ class Pano extends Component<PanoProps, PanoState> {
 			this.sceneChangeLock = true;
 			this.loaderSpinnerElem.style.visibility = "visible";
 			this.panoIdChangeReactionDisposer();
+			if(!this.neighbors.get(pid)){
+				return;
+			}
 			this.currLoc = this.neighbors.get(pid).location;
 			//await this.currLoc.setAllAttr();
 			this.texture = this.loader.load(
@@ -963,6 +972,7 @@ class Pano extends Component<PanoProps, PanoState> {
 						<Minimap panoPageStore={this.panoPageStore} />
 					</div>
 					<div><Compass panoPageStore={this.panoPageStore} /></div>
+					<div><ZoomController panoPageStore={this.panoPageStore} /></div>
 					<div id="trans-spinner" style={ {visibility:"hidden"} }>
 						<this.RenderSpinner />
 					</div>

@@ -36,7 +36,7 @@ type NeighborType = {
 const zoomLevelFov = {
 	0:40,
 	1:35,
-	3:30
+	2:30
 };
 
 class Pano extends Component<PanoProps, PanoState> {
@@ -46,11 +46,14 @@ class Pano extends Component<PanoProps, PanoState> {
 	panoPageStore = undefined;
 	panoIdChangeReactionDisposer;
 	panoViewDirectionResetReactionDisposer;
+	panoZoomChangeReactionDisposer;
 	canvasStyle = {cursor:"default"};	
 	loaderSpinnerElem = undefined;
 
 	//Flags and locks
-	sceneChangeLock = false;
+	animationLock = false;
+	wheelLockTemp = false;
+	eventListenersLoaded = false;
 
 	//THREEjs objects
 	cylindergeometry = new THREE.CylinderBufferGeometry(20, 20, 15, 100, 1, true);
@@ -65,6 +68,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	tempcylindermesh = undefined;
 	threeCamera = undefined;
 	threeScene = undefined;
+	threeCanvas = undefined;
 
 	cone0:THREE.Mesh;
 	cone1:THREE.Mesh;
@@ -177,15 +181,46 @@ class Pano extends Component<PanoProps, PanoState> {
 				this.panoPageStore.reset = false;
             }
         );
-    }
+	}
+	
+	setZoomChangeReaction() {
+		this.panoZoomChangeReactionDisposer = reaction(
+            () => this.panoPageStore.zoom,
+            (zoom, reaction) => {
+				this.changeZoom();
+            }
+        );
+	}
+
+	onScroll = (event) => {
+		if(this.wheelLockTemp)
+			return;
+		this.wheelLockTemp = true;
+		if(event.path[0]===this.threeCanvas){
+			if(event.wheelDeltaY>0){
+				this.panoPageStore.zoomIn();
+			}
+			if(event.wheelDeltaY<0){
+				this.panoPageStore.zoomOut();
+			}
+		}
+		this.wheelLockTemp = false;
+		/*/// Following code let wheel controls y-axis scene rotation
+		if(event.path[0]===canvas){
+			var deltaY = event.wheelDeltaY / 3;
+			rotateScene(deltaY);
+		}*/
+	}
+
 
 	loadTexture() {
 		this.texture = this.loader.load(
 			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
-			() => {
+			() => { //On pano first load complete
 				this.panoPageStore = new PanoPageStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0, this.currLoc.id);
 				this.setPanoPageStoreIDChangeReaction();
 				this.setCameraResetReaction();
+				this.setZoomChangeReaction();
 				this.setState({ isLoading: false });
 			},
 			undefined,
@@ -230,7 +265,37 @@ class Pano extends Component<PanoProps, PanoState> {
 		});
 	}*/
 
+	changeZoom(){
+		if(this.animationLock)
+			return;
+		this.animationLock = true;
+		this.panoPageStore.zoomLock = true;
+		this.panoZoomChangeReactionDisposer();
+		var zoomBegin = {
+			at: this.threeCamera.fov
+		};
+		var zoomEnd = {
+			at: zoomLevelFov[ this.panoPageStore.zoom ]
+		};
+		var tweenZoom = new TWEEN.Tween(zoomBegin)
+			.to(zoomEnd, 150)
+			.easing(TWEEN.Easing.Quadratic.InOut);
+		tweenZoom.onUpdate(() => {
+			this.threeCamera.fov = zoomBegin.at;
+			this.threeCamera.updateProjectionMatrix();
+		});
+		tweenZoom.onComplete(() => {
+			this.setZoomChangeReaction();
+			this.animationLock = false;
+			this.panoPageStore.zoomLock = false;
+		});
+		tweenZoom.start();
+	}
+
 	CameraLookNorth(camera) {
+		if(this.animationLock)
+			return;
+		this.animationLock = true;
 		this.panoViewDirectionResetReactionDisposer();
 		var rotBegin = {
 			at: camera.rotation.y
@@ -249,12 +314,13 @@ class Pano extends Component<PanoProps, PanoState> {
 			camera.rotation.y = 0;
 			this.panoPageStore.updatePegmanOffset(0.0);
 			this.setCameraResetReaction();
+			this.animationLock = false;
 		});
 		tweenRot.start();
 	}
 
 	teleportToScene = async (id) => {
-		this.sceneChangeLock = true;
+		this.animationLock = true;
 		this.loaderSpinnerElem.style.visibility = "visible";
 		//console.log("Teleporting to: "+id);
 		this.currLoc = new Location(id);
@@ -318,7 +384,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			this.tempcylindermesh = undefined;
 			this.tempcylindergeometry.scale(-1,1,1);
 			await this.setNeighbors().then(this.RenderArrows);
-			this.sceneChangeLock = false;
+			this.animationLock = false;
 		});
 		this.cylindermaterial.transparent = true;
 		crossfade.start();
@@ -400,6 +466,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		//var canvas = gl.domElement;  // for react-three-fiber v3.x
 		this.threeCamera = camera;
 		this.threeScene = scene;
+		this.threeCanvas = canvas;
 		
 		(camera as any).fov = 40;
 		//gl.setSize(window.innerWidth, window.innerHeight);
@@ -589,17 +656,9 @@ class Pano extends Component<PanoProps, PanoState> {
 			startX = (event.targetTouches[0].pageX);
 			rotateScene(deltaX);
 		}
-
-		//Mouse wheel rotation control
-		function onScroll(event) {
-			if(event.path[0]===canvas){
-				var deltaY = event.wheelDeltaY / 3;
-				rotateScene(deltaY);
-			}
-        }
         
 		var rotateScene = (deltaX) => {
-			if(this.sceneChangeLock)
+			if(this.animationLock)
 				return;
 			if(deltaX!==0){
 				isDraggin = true;
@@ -620,10 +679,16 @@ class Pano extends Component<PanoProps, PanoState> {
 		canvas.addEventListener("mousemove", e => onMouseMove(e), false);
 		canvas.addEventListener("mousedown", e => onMouseDown(e), false);
 		canvas.addEventListener("mouseup", e => onMouseUp(e), false);
-		canvas.addEventListener("mousewheel", e => onScroll(e),false);
+
 		canvas.addEventListener("touchmove", e => onTouchMove(e), false);
 		canvas.addEventListener("touchstart", e => onTouchStart(e), false);
-		window.addEventListener( 'resize', onWindowResize, false );
+		window.addEventListener('resize', onWindowResize, false);
+
+
+		if (!this.eventListenersLoaded) {
+			canvas.addEventListener("mousewheel", e => this.onScroll(e), false);
+			this.eventListenersLoaded = true;
+		}
 
 		var animateTransition = id => {
 			(mouseplateG.current as any).visible = false;
@@ -702,7 +767,7 @@ class Pano extends Component<PanoProps, PanoState> {
 				isAnimating = false;
 				(mouseplateG.current as any).visible = true;
 				await this.setNeighbors().then(this.RenderArrows);//.then(()=>{this.InitNeighborPins()});
-				this.sceneChangeLock = false;
+				this.animationLock = false;
 				//console.log("b2");
 			});
             tweenRot.chain(tweenZoom);
@@ -715,7 +780,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		//RenderCompass();
 
 		var transitionToScene = async (pid) => {
-			this.sceneChangeLock = true;
+			this.animationLock = true;
 			this.loaderSpinnerElem.style.visibility = "visible";
 			this.panoIdChangeReactionDisposer();
 			if(!this.neighbors.get(pid)){
@@ -815,7 +880,7 @@ class Pano extends Component<PanoProps, PanoState> {
 							ref={conemesh}
 							geometry={cone.hitbox}
 							onClick={() => {
-								if(!this.sceneChangeLock){
+								if(!this.animationLock){
 									transitionToScene(this.n0.location.id); /*this.currLoc.updateCalibration(camera)*/
 								}
 							}}
@@ -840,7 +905,7 @@ class Pano extends Component<PanoProps, PanoState> {
 							ref={conemesh1}
 							geometry={cone.hitbox}
 							onClick={() => {
-								if(!this.sceneChangeLock){
+								if(!this.animationLock){
 									transitionToScene(this.n1.location.id); /*this.currLoc.updateCalibration(camera)*/
 								}
 							}}
@@ -865,7 +930,7 @@ class Pano extends Component<PanoProps, PanoState> {
 							ref={conemesh2}
 							geometry={cone.hitbox}
 							onClick={() => {
-								if(!this.sceneChangeLock){
+								if(!this.animationLock){
 									transitionToScene(this.n2.location.id);
 								}
 							}}
@@ -923,7 +988,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					</mesh>
 					<mesh
 						geometry={new THREE.CircleGeometry(0.4, 100, 0)}
-						onPointerUp={()=>{if(!isDraggin && !this.sceneChangeLock){ navigateWithMouse(); }}}
+						onPointerUp={()=>{if(!isDraggin && !this.animationLock){ navigateWithMouse(); }}}
 					>
 						<meshBasicMaterial attach="material" color="white" opacity={0.7} transparent={true} />
 					</mesh>

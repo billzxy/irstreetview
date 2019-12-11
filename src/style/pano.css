@@ -54,15 +54,19 @@
 #zoomerIn {
 	z-index: 4;
 	position: absolute;
-	right: 30px;
-	bottom: 20px;
+	right: 0px;
+	bottom: 40px;
+	opacity: 0.2;
+	cursor: pointer;
 }
 
 #zoomerOut {
 	z-index: 5;
 	position: absolute;
-	right: 30px;
-	bottom: 20px;
+	right: 0px;
+	bottom: 0px;
+	opacity: 0.2;
+	cursor: pointer;
 }
 
 #trans-spinner {

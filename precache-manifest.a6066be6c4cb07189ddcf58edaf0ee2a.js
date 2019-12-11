@@ -1,19 +1,19 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "bcaf7bd36ef6e2646dc72a4171f93cb9",
+    "revision": "55b3b910da94a6854e66d80fad7c1bdc",
     "url": "/irstreetview/index.html"
   },
   {
-    "revision": "8742b6b5b62b81383953",
-    "url": "/irstreetview/static/css/main.6ef35346.chunk.css"
+    "revision": "69818ddebb62d9f06dd2",
+    "url": "/irstreetview/static/css/main.891d39b8.chunk.css"
   },
   {
-    "revision": "f594c4e3310b72d0fd41",
-    "url": "/irstreetview/static/js/2.9a9b1ca3.chunk.js"
+    "revision": "d0ee6bb38920e510bb3c",
+    "url": "/irstreetview/static/js/2.b43cc000.chunk.js"
   },
   {
-    "revision": "8742b6b5b62b81383953",
-    "url": "/irstreetview/static/js/main.88c1c6be.chunk.js"
+    "revision": "69818ddebb62d9f06dd2",
+    "url": "/irstreetview/static/js/main.a8fe390c.chunk.js"
   },
   {
     "revision": "eeb886a1fd84c33d7dd8",
@@ -134,5 +134,17 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "4957277e5d75886add8094f96bb49588",
     "url": "/irstreetview/static/media/rotating.4957277e.png"
+  },
+  {
+    "revision": "72cda6d6a45c90f240e7189759010ff8",
+    "url": "/irstreetview/static/media/zoomerBase.72cda6d6.svg"
+  },
+  {
+    "revision": "f208fd9cf8c24773cf5fb5d53f56e1f1",
+    "url": "/irstreetview/static/media/zoomerMinus.f208fd9c.svg"
+  },
+  {
+    "revision": "97ab4b975fa4e6f9f0c9718627f9eea8",
+    "url": "/irstreetview/static/media/zoomerPlus.97ab4b97.svg"
   }
 ]);

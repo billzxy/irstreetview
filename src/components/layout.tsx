@@ -17,7 +17,7 @@ export const Header = styled.div`
 	top: 10px;
 	right: 10px;
 	padding: 12px;
-	height: 20px;
+	height: 50px;
 	display: flex;
 	justify-content: flex-start;
 	align-items: center;
@@ -29,6 +29,7 @@ export const Header = styled.div`
 		margin-left: 0.5rem;
 		text-decoration: none;
 		color: rgba(0, 0, 0, 0.5);
+		font-size: 1.2rem;
 	}
 
 	& .ir-nav-item__active {

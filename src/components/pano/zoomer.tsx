@@ -21,7 +21,6 @@ export default class ZoomController extends Component<{panoPageStore},{}>{
     currZoomLevel = 0;
 
     componentDidMount(){
-        this.setZoomerControlReaction();
         this.zoomerElementHandlerInit();
     }
 
@@ -58,22 +57,12 @@ export default class ZoomController extends Component<{panoPageStore},{}>{
 
     zoomerInOut = (e) => {
         e.preventDefault();
-        //this.props.panoPageStore.reset = true;
         this.zoomerInElement.style.opacity = 0.2;
     }
 
     zoomerOutOut = (e) => {
         e.preventDefault();
         this.zoomerOutElement.style.opacity = 0.2;
-    }
-
-    setZoomerControlReaction() {
-        this.zoomerReactionDisposer = reaction(
-            () => this.props.panoPageStore.cameraY,
-            (cameraY, reaction) => {
-                //this.RotateCompass(cameraY);
-            }
-        );
     }
 
     ZoomerElement = () => {
@@ -91,15 +80,6 @@ export default class ZoomController extends Component<{panoPageStore},{}>{
 
             </div>
         );
-    }
-
-
-    RotateCompass = (cameraY) => {
-        var deg = Math.ceil(-cameraY*180/Math.PI);
-		if(deg<0){
-			deg = 360+deg;
-        }
-        document.getElementById("compassDiamond").style.transform = `rotate(${deg}deg)`;
     }
 
     render() {

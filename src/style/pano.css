@@ -69,6 +69,28 @@
 	cursor: pointer;
 }
 
+.typeSelector {
+	z-index: 2;
+	position: absolute;
+	left: 100px;
+	top: 30px;
+}
+
+.typeSelector > .buttons > button {
+	color: rgb(220, 220, 220);
+	transition-duration: 0.1s;
+	opacity: 0.9;
+}
+
+.typeSelector > .buttons > button:hover {
+	color: rgb(240, 240, 240);
+}
+
+.typeSelector > .buttons > button:active {
+	color: white;
+	opacity: 1.0;
+}
+
 #trans-spinner {
 	z-index: 4;
 	position: absolute;

@@ -13,6 +13,7 @@ import { Arrow, Cylinder } from "./components/pano/shapes";
 import Spinner from "./components/spinner";
 import Compass from "./components/pano/compass";
 import ZoomController from "./components/pano/zoomer";
+import PanoTypeController from "./components/pano/panotype";
 import { observable, reaction } from "mobx";
 import { Vector3 } from "three";
 //import { observer } from "mobx-react";
@@ -39,6 +40,8 @@ const zoomLevelFov = {
 	2:30
 };
 
+const PanoTypes = ["mx", "ir", "vl"];
+
 class Pano extends Component<PanoProps, PanoState> {
 	//Members
 	currLoc: Location;
@@ -47,6 +50,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	panoIdChangeReactionDisposer;
 	panoViewDirectionResetReactionDisposer;
 	panoZoomChangeReactionDisposer;
+	panoTypeChangeReactionDisposer;
 	canvasStyle = {cursor:"default"};	
 	loaderSpinnerElem = undefined;
 
@@ -54,6 +58,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	animationLock = false;
 	wheelLockTemp = false;
 	eventListenersLoaded = false;
+	currPanoType = 0;
 
 	//THREEjs objects
 	cylindergeometry = new THREE.CylinderBufferGeometry(20, 20, 15, 100, 1, true);
@@ -63,7 +68,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	loader = new THREE.TextureLoader();
 	lines = [];
 	
-    tempcylindergeometry = new THREE.CylinderBufferGeometry(21, 21, 15, 100, 1, true);
+    tempcylindergeometry = new THREE.CylinderBufferGeometry(20.1, 20.1, 15, 100, 1, true);
 	tempcylindermaterial = undefined;
 	tempcylindermesh = undefined;
 	threeCamera = undefined;
@@ -192,6 +197,22 @@ class Pano extends Component<PanoProps, PanoState> {
         );
 	}
 
+	setTypeChangeReaction() {
+		this.panoTypeChangeReactionDisposer = reaction(
+            () => this.panoPageStore.panoType,
+            (type, reaction) => {
+				this.changePanoType(type);
+            }
+        );
+	}
+
+	setAllReactions(){
+		this.setPanoPageStoreIDChangeReaction();
+		this.setCameraResetReaction();
+		this.setZoomChangeReaction();
+		this.setTypeChangeReaction();
+	}
+
 	onScroll = (event) => {
 		if(this.wheelLockTemp)
 			return;
@@ -212,15 +233,21 @@ class Pano extends Component<PanoProps, PanoState> {
 		}*/
 	}
 
+	generatePanoFilename(){
+		if(this.currLoc.types.includes(this.currPanoType)){
+			return `${PanoTypes[this.currPanoType]}/pano-${this.currLoc.id}-${PanoTypes[this.currPanoType]}.png`;
+		}else{
+			return `mx/pano-${this.currLoc.id}-mx.png`;
+		}
+	}
+
 
 	loadTexture() {
 		this.texture = this.loader.load(
-			require(`./assets/viewPano/resource/${this.currLoc.fname}`),
+			require(`./assets/viewPano/resource/${this.generatePanoFilename()}`),
 			() => { //On pano first load complete
 				this.panoPageStore = new PanoPageStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0, this.currLoc.id);
-				this.setPanoPageStoreIDChangeReaction();
-				this.setCameraResetReaction();
-				this.setZoomChangeReaction();
+				this.setAllReactions();
 				this.setState({ isLoading: false });
 			},
 			undefined,
@@ -292,6 +319,73 @@ class Pano extends Component<PanoProps, PanoState> {
 		tweenZoom.start();
 	}
 
+	changePanoType(type){
+		if(this.animationLock || !this.currLoc.types.includes(this.currPanoType))
+			return;
+		this.animationLock = true;
+		this.panoPageStore.typeLock = true;
+		this.panoTypeChangeReactionDisposer();
+		this.loaderSpinnerElem.style.visibility = "visible";
+		this.currPanoType = type;
+		//console.log(this.generatePanoFilename());
+
+		this.texture = this.loader.load(
+			require(`./assets/viewPano/resource/${this.generatePanoFilename()}`),
+			() => {//onComplete
+				this.loaderSpinnerElem.style.visibility = "hidden";
+				this.setTypeChangeReaction();
+				this.tempcylindermaterial = new THREE.MeshBasicMaterial({
+					map: this.texture,
+					side: THREE.DoubleSide
+				});
+				this.tempcylindermesh = new THREE.Mesh(
+					this.tempcylindergeometry,
+					this.tempcylindermaterial
+				);
+				this.tempcylindergeometry.scale(-1, 1, 1);
+				this.tempcylindermesh.rotation.y = this.cylindermesh.rotation.y;
+				this.threeScene.add(this.tempcylindermesh);
+				this.animatePanoTypeChangeTextureFade();
+			},
+			undefined,
+			err => {
+				console.error(err);
+			}
+		);
+	}
+
+	animatePanoTypeChangeTextureFade = () => {
+		var fadeBegin = {
+			at: this.cylindermaterial.opacity
+		};
+		var fadeEnd = {
+			at: 0.1
+		};
+		var crossfade = new TWEEN.Tween(fadeBegin)
+			.to(fadeEnd, 500)
+			.easing(TWEEN.Easing.Quadratic.InOut);
+		crossfade.onUpdate(() => {
+			//console.log(this.cylindermaterial);
+			this.cylindermaterial.opacity = fadeBegin.at;
+		});
+		crossfade.onComplete( async () => {
+			//When animations are completed, textures are swapped
+			this.cylindermaterial.map = this.texture;
+			this.cylindermaterial.transparent = false;
+			this.cylindermaterial.opacity = 1.0;
+
+			this.threeScene.remove(this.tempcylindermesh);
+			this.tempcylindermesh.geometry.dispose();
+			this.tempcylindermesh.material.dispose();
+			this.tempcylindermesh = undefined;
+			this.tempcylindergeometry.scale(-1,1,1);
+			this.animationLock = false;
+			this.panoPageStore.typeLock = false;
+		});
+		this.cylindermaterial.transparent = true;
+		crossfade.start();
+	}
+
 	CameraLookNorth(camera) {
 		if(this.animationLock)
 			return;
@@ -326,7 +420,7 @@ class Pano extends Component<PanoProps, PanoState> {
 		this.currLoc = new Location(id);
 		await this.currLoc.setAllAttr().then(()=>{
 			this.texture = this.loader.load(
-				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
+				require(`./assets/viewPano/resource/${this.generatePanoFilename()}`),
 				() => {//onComplete
 					this.loaderSpinnerElem.style.visibility = "hidden";
 					this.tempcylindermaterial = new THREE.MeshBasicMaterial({
@@ -789,7 +883,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			this.currLoc = this.neighbors.get(pid).location;
 			//await this.currLoc.setAllAttr();
 			this.texture = this.loader.load(
-				require(`./assets/viewPano/resource/${this.currLoc.fname}`),
+				require(`./assets/viewPano/resource/${this.generatePanoFilename()}`),
 				() => {//onComplete
 					this.loaderSpinnerElem.style.visibility = "hidden";
                     this.tempcylindermaterial = new THREE.MeshBasicMaterial({
@@ -1038,6 +1132,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					</div>
 					<div><Compass panoPageStore={this.panoPageStore} /></div>
 					<div><ZoomController panoPageStore={this.panoPageStore} /></div>
+					<div><PanoTypeController panoPageStore={this.panoPageStore} /></div>
 					<div id="trans-spinner" style={ {visibility:"hidden"} }>
 						<this.RenderSpinner />
 					</div>

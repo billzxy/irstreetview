@@ -12,6 +12,8 @@ export default class PanoPageStore {
     @observable reset:boolean;
 	@observable zoom:number;
 	@observable zoomLock:boolean;
+	@observable panoType:number;
+	@observable typeLock:boolean;
 
 	constructor(lat, lng, cameraY, id){
 		this.lng = lng;
@@ -22,6 +24,8 @@ export default class PanoPageStore {
 		this.pmanOffsetY = this.setPegmanRotationOffsetYFromCameraY(cameraY);
 		this.zoom = 0;
 		this.zoomLock = false;
+		this.panoType = 0;
+		this.typeLock = false;
 	}
 
 	updateValues(lat, lng, cameraY, id){

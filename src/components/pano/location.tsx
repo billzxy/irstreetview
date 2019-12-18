@@ -11,8 +11,9 @@ class Location {
     id: string;
     fname: string = "";
     neighborhood: string = "";
-    neighborArr
-    cameraY
+    neighborArr;
+    cameraY;
+    types:number[];
 
     //Methods
     constructor(id: string) {
@@ -26,6 +27,7 @@ class Location {
             this.coord.lng = result.data.data.coord.lng;
             this.calibration = result.data.data.calibration;
             this.neighborhood = result.data.data.neighborhood;
+            this.types = result.data.data.types;
         })
     }
 

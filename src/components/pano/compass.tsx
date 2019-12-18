@@ -1,7 +1,7 @@
 import React, { Component, useEffect, useRef } from "react";
 import { observable, reaction } from "mobx";
 import { observer } from "mobx-react";
-import {PanoPageStore} from "./minimap"
+import PanoPageStore from "./pageStore"
 
 
 @observer

@@ -21,7 +21,7 @@
 	left: 20px;
 	bottom: 20px;
 	border: 1px solid black;
-  	border-radius: 0px;
+	border-radius: 0px;
 }
 
 #compassBase {
@@ -70,10 +70,10 @@
 }
 
 .typeSelector {
-	z-index: 2;
+	/* z-index: 2;
 	position: absolute;
 	left: 100px;
-	top: 30px;
+	top: 30px; */
 }
 
 .typeSelector > .buttons > button {
@@ -88,7 +88,7 @@
 
 .typeSelector > .buttons > button:active {
 	color: white;
-	opacity: 1.0;
+	opacity: 1;
 }
 
 #trans-spinner {

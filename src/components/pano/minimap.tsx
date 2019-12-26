@@ -1,67 +1,26 @@
-import React, { Component, useEffect } from "react";
+import React, { Component, useEffect, useState } from "react";
 import { Map, GoogleApiWrapper, Marker } from "google-maps-react";
 import { withRouter, RouteComponentProps } from "react-router-dom";
 import styled from "styled-components";
 import { observable } from "mobx";
 import { observer } from "mobx-react";
-import PanoPageStore from "./pageStore"
+import PanoPageStore from "./pageStore";
 
 import api from "../../api/index";
 
-const StyledMap = styled(Map)`
-	width: 100% !important;
-	height: 100% !important;
-	position: relative !important;
+const StyledMap = styled(Map)``;
+
+const Container = styled.div<{ active: boolean }>`
+	z-index: 1;
+	position: absolute;
+	width: ${({ active }) => (active ? "250px" : "200px")};
+	height: ${({ active }) => (active ? "200px" : "100px")};
+	left: 20px;
+	bottom: 20px;
+	border: 1px solid black;
+	border-radius: 0px;
+	transition: width 0.2s, height 0.2s;
 `;
-
-const Container = styled.div`
-	width: 100%;
-	height: 100%;
-
-	& > div {
-		width: 100%;
-		height: 100%;
-	}
-`;
-
-var minimapElement, infoBoxElement;
-var mapHandlerInit = () => {
-	minimapElement = (document.getElementsByClassName('Minimap') as HTMLCollectionOf<HTMLElement>)[0];
-	//console.log(minimapElement[0]);
-	minimapElement.addEventListener("mouseover", e => minimapZoomIn(e), false);
-	minimapElement.addEventListener("mouseout", e => minimapZoomOut(e), false);
-
-	infoBoxElement = (document.getElementsByClassName('InfoBox') as HTMLCollectionOf<HTMLElement>)[0];
-	infoBoxElement.addEventListener("mouseover", e => infoBoxHovered(e), false);
-	infoBoxElement.addEventListener("mouseout", e => infoBoxUnhovered(e), false);
-	infoBoxElement.addEventListener("mousedown", e => goBack(e), false);
-}
-function minimapZoomIn(e){
-	e.preventDefault();
-	minimapElement.style.width = "250px";
-	minimapElement.style.height = "200px";
-}
-
-function minimapZoomOut(e){
-	e.preventDefault();
-	minimapElement.style.width = "200px";
-	minimapElement.style.height = "100px";
-}
-
-function infoBoxHovered(e){
-	e.preventDefault();
-	infoBoxElement.style.opacity = "0.75";
-}
-
-function infoBoxUnhovered(e){
-	e.preventDefault();
-	infoBoxElement.style.opacity = "0.5";
-}
-
-function goBack(e) {
-	e.preventDefault();
-	window.history.back();
-}
 
 export interface Coordinate {
 	id: string | number;
@@ -74,15 +33,33 @@ export interface MapContainerState {
 }
 
 type center = {
-	lng: string,
-	lat: string,
-	bearing: string
+	lng: string;
+	lat: string;
+	bearing: string;
+};
+
+export interface MapContainerProps
+	extends RouteComponentProps<{ PanoPageStore }> {}
+
+interface PegmanProps {
+	id: string;
+	lat: number;
+	lng: number;
+	pmanOffsetY: number;
+	google?: any;
+	map?: any;
+	mapCenter?: any;
 }
 
-export interface MapContainerProps extends RouteComponentProps<{PanoPageStore}> {}
-
-const Pegman = ({ id, lat, lng, pmanOffsetY, google, map, mapCenter }) => {
-
+const Pegman = ({
+	id,
+	lat,
+	lng,
+	pmanOffsetY,
+	google,
+	map,
+	mapCenter
+}: PegmanProps) => {
 	var origin = new google.maps.Point(8, 9);
 	if (pmanOffsetY) {
 		origin = new google.maps.Point(8, pmanOffsetY);
@@ -95,23 +72,25 @@ const Pegman = ({ id, lat, lng, pmanOffsetY, google, map, mapCenter }) => {
 		custom: true
 	};
 
-	return <Marker
-		lid={id}
-		position={{lat: lat, lng: lng}}
-		icon={pegIcon}
-		key={id}
-		google={google}
-		map={map}
-		mapCenter={mapCenter}
-		zIndex={100}
-	/>
-}
-
+	return (
+		// @ts-ignore
+		<Marker
+			// @ts-ignore
+			lid={id} // @ts-ignore
+			position={{ lat: lat, lng: lng }}
+			icon={pegIcon}
+			key={id}
+			google={google}
+			map={map}
+			mapCenter={mapCenter}
+			zIndex={100}
+		/>
+	);
+};
 
 @observer
 class MapContainer extends Component<MapContainerProps, MapContainerState> {
-	
-	pStore:PanoPageStore;
+	pStore: PanoPageStore;
 
 	constructor(props) {
 		super(props);
@@ -120,7 +99,6 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 		};
 		this.pStore = (this.props as any).panoPageStore;
 	}
-	
 
 	componentDidMount() {
 		var getAllPanoCoords = async () => {
@@ -177,19 +155,21 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 		var z = 1;
 		return (this.state as any).coords.map((coord, index) => {
 			if ((this.state as any).coords[index].id === this.pStore.id) {
-				
-			}else{
+			} else {
 				icon = this.dotIcon;
 				z++;
 				return (
+					// @ts-ignore
 					<Marker
+						// @ts-ignore
 						lid={coord.id}
 						position={{
 							lat: coord.lat,
 							lng: coord.lng
 						}}
 						onClick={e => {
-							return this.gotoPano(e.lid);
+							// @ts-ignore
+							return this.props.onPanoIdChange(e.lid);
 						}}
 						icon={icon}
 						key={coord.id}
@@ -197,16 +177,15 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 					/>
 				);
 			}
-		})
+		});
 	}
 
-
-	gotoPano(id) {
-		// @ts-ignore
-		//this.props.history.push(`/viewPano/${id}`);
-		//console.log("Update id: "+id);
-		this.pStore.id = id;
-	}
+	// gotoPano(id) {
+	// 	// @ts-ignore
+	// 	//this.props.history.push(`/viewPano/${id}`);
+	// 	//console.log("Update id: "+id);
+	// 	this.pStore.id = id;
+	// }
 
 	render() {
 		const { showComp } = this.state;
@@ -220,13 +199,18 @@ class MapContainer extends Component<MapContainerProps, MapContainerState> {
 					center={{ lat: this.pStore.lat, lng: this.pStore.lng }}
 					initialCenter={{ lat: this.pStore.lat, lng: this.pStore.lng }}
 					bounds={this.bounds}
-					onReady={mapHandlerInit}
+					// onReady={mapHandlerInit}
 					streetViewControl={false}
 					fullscreenControl={false}
 					mapTypeControl={false}
 					rotateControl={false}
 				>
-					<Pegman id={this.pStore.id} lat={this.pStore.lat} lng={this.pStore.lng} pmanOffsetY={this.pStore.pmanOffsetY} />
+					<Pegman
+						id={this.pStore.id}
+						lat={this.pStore.lat}
+						lng={this.pStore.lng}
+						pmanOffsetY={this.pStore.pmanOffsetY}
+					/>
 					{this.addMarkers()}
 				</StyledMap>
 			</>
@@ -238,48 +222,39 @@ const Minimap = GoogleApiWrapper({
 	apiKey: `${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
 })(withRouter(MapContainer));
 
+// class InfoBox extends Component {
+// 	constructor(props) {
+// 		super(props);
+// 	}
 
-class InfoBox extends Component {
-	constructor(props) {
-		super(props);
-	}
+// 	backBox() {
+// 		return (
+// 			<div>
+// 				<span> ← </span>
+// 			</div>
+// 		);
+// 	}
 
-	backBox(){
-		return(
-			<div >
-				<span> ← </span>
-			</div>
-		)
-	}
+// 	textBox() {
+// 		return <div></div>;
+// 	}
 
-	textBox(){
-		return(
-			<div>
+// 	render() {
+// 		return <this.backBox />;
+// 	}
+// }
 
-			</div>
-		)
-	}
-
-	render(){
-		return(
-			<this.backBox />
-		)
-	}
-
-
-}
-
-export default props => (
-	<>
-		<div className="Minimap">
-			<Container>
+export default props => {
+	const [active, setActive] = useState(false);
+	return (
+		<>
+			<Container
+				active={active}
+				onMouseOver={() => setActive(true)}
+				onMouseOut={() => setActive(false)}
+			>
 				<Minimap {...props} />
-
 			</Container>
-
-		</div>
-		<div className="InfoBox">
-			<InfoBox />
-		</div>
-	</>
-);
+		</>
+	);
+};

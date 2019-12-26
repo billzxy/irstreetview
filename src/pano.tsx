@@ -2,10 +2,13 @@ import React, { Component, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useThree, useRender } from "react-three-fiber";
 import { withRouter, RouteComponentProps } from "react-router-dom";
+import styled from "styled-components";
 //import SVGLoader from "three-svg-loader";
 import { disableBodyScroll } from 'body-scroll-lock';
 
 import "./style/pano.css";
+
+import InfoBox from "./components/pano/infoBox"
 import Minimap from "./components/pano/minimap"
 import PanoPageStore from "./components/pano/pageStore"
 import { Location } from "./components/pano/location";
@@ -19,15 +22,28 @@ import { Vector3 } from "three";
 //import { observer } from "mobx-react";
 //import OrbitControls from 'three-orbitcontrols'
 
+const StyledInfoBox = styled(InfoBox)`
+	margin-right: 12px;
+`;
+
+const PanoHeaderContainer = styled.div`
+	z-index: 2;
+	position: absolute;
+	left: 12px;
+	top: 30px;
+	display: flex;
+	flex-direction: row;
+`
+
 const TWEEN = require("@tweenjs/tween.js");
 
-interface PanoProps extends RouteComponentProps<{ id?: string, position? }> {
-	lid: string;
-}
+interface PanoProps extends RouteComponentProps<{ id?: string, position? }> {}
 
 type PanoState = { 
 	isLoading: boolean
+	lid: string
 };
+
 type NeighborType = {
 	location: Location;
 	distance: number;
@@ -103,7 +119,8 @@ class Pano extends Component<PanoProps, PanoState> {
 	constructor(props) {
 		super(props);
 		this.state = {
-			isLoading: true
+			isLoading: true,
+			lid: props.match.params.id
 		};
 		this.RenderPano = this.RenderPano.bind(this);
 	}
@@ -131,6 +148,13 @@ class Pano extends Component<PanoProps, PanoState> {
 
 	componentWillUnmount(){
 		console.log("Unmount pano...");
+	}
+
+	onChangeCurId = (newId: string) => {
+		this.setState({ lid: newId }, () => {
+			const { lid } = this.state
+			this.teleportToScene(lid);
+		})
 	}
 	
 	async setNeighbors() {//Only supports two neighbors for now
@@ -414,6 +438,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	}
 
 	teleportToScene = async (id) => {
+		this.panoIdChangeReactionDisposer();
 		this.animationLock = true;
 		this.loaderSpinnerElem.style.visibility = "visible";
 		//console.log("Teleporting to: "+id);
@@ -437,6 +462,7 @@ class Pano extends Component<PanoProps, PanoState> {
 					this.animateTeleportationTextureFade();
 					let {coord, cameraY, id} = this.currLoc;
 					this.panoPageStore.updateValues(coord.lat, coord.lng, cameraY, id);
+					this.setPanoPageStoreIDChangeReaction()
 				},
 				undefined,
 				err => {
@@ -1127,12 +1153,13 @@ class Pano extends Component<PanoProps, PanoState> {
 							<this.RenderPano />
 						</Canvas>
 					</div>
-					<div>
-						<Minimap panoPageStore={this.panoPageStore} />
-					</div>
+					<PanoHeaderContainer>
+						<StyledInfoBox />
+						<div><PanoTypeController panoPageStore={this.panoPageStore} /></div>
+					</PanoHeaderContainer>
+					<Minimap panoPageStore={this.panoPageStore} onPanoIdChange={this.onChangeCurId} />
 					<div><Compass panoPageStore={this.panoPageStore} /></div>
 					<div><ZoomController panoPageStore={this.panoPageStore} /></div>
-					<div><PanoTypeController panoPageStore={this.panoPageStore} /></div>
 					<div id="trans-spinner" style={ {visibility:"hidden"} }>
 						<this.RenderSpinner />
 					</div>

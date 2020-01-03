@@ -1,7 +1,6 @@
-import React, { Component } from 'react';
-import ReactDOM from 'react-dom';
-import './style/index.css';
-import * as App from './App';
+import React, { Component } from "react";
+import ReactDOM from "react-dom";
+import "./style/index.css";
+import App from "./App";
 
-ReactDOM.render(<App.Interface />, document.getElementById('interface'));
-
+ReactDOM.render(<App />, document.getElementById("interface"));

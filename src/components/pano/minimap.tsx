@@ -6,7 +6,7 @@ import { observable } from "mobx";
 import { observer } from "mobx-react";
 import PanoPageStore from "./pageStore";
 
-import api from "../../api/index";
+import api from "@/api";
 
 const StyledMap = styled(Map)``;
 
@@ -38,8 +38,9 @@ type center = {
 	bearing: string;
 };
 
-export interface MapContainerProps
-	extends RouteComponentProps<{ PanoPageStore }> {}
+export interface MapContainerProps extends RouteComponentProps {
+	panoPageStore: PanoPageStore;
+}
 
 interface PegmanProps {
 	id: string;
@@ -92,12 +93,12 @@ const Pegman = ({
 class MapContainer extends Component<MapContainerProps, MapContainerState> {
 	pStore: PanoPageStore;
 
-	constructor(props) {
+	constructor(props: MapContainerProps) {
 		super(props);
 		this.state = {
 			showComp: false
 		};
-		this.pStore = (this.props as any).panoPageStore;
+		this.pStore = this.props.panoPageStore;
 	}
 
 	componentDidMount() {
@@ -244,7 +245,7 @@ const Minimap = GoogleApiWrapper({
 // 	}
 // }
 
-export default props => {
+export default (props: RouteComponentProps) => {
 	const [active, setActive] = useState(false);
 	return (
 		<>

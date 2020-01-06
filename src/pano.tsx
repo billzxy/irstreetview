@@ -1,4 +1,4 @@
-import React, { Component, useRef } from "react";
+import React, { Component, useRef, PureComponent } from "react";
 import * as THREE from "three";
 import { Canvas, useThree, useRender } from "react-three-fiber";
 import { withRouter, RouteComponentProps } from "react-router-dom";
@@ -14,11 +14,12 @@ import PanoPageStore from "./components/pano/pageStore"
 import { Location } from "./components/pano/location";
 import { Arrow, Cylinder } from "./components/pano/shapes";
 import Spinner from "./components/spinner";
-import Compass from "./components/pano/compass";
+import Compass, { ACompass } from "./components/pano/compass";
 import ZoomController from "./components/pano/zoomer";
 import PanoTypeController from "./components/pano/panotype";
 import { observable, reaction } from "mobx";
 import { Vector3 } from "three";
+
 //import { observer } from "mobx-react";
 //import OrbitControls from 'three-orbitcontrols'
 
@@ -42,6 +43,7 @@ interface PanoProps extends RouteComponentProps<{ id?: string, position? }> {}
 type PanoState = { 
 	isLoading: boolean
 	lid: string
+	cameraY: number
 };
 
 type NeighborType = {
@@ -58,7 +60,7 @@ const zoomLevelFov = {
 
 const PanoTypes = ["mx", "ir", "vl"];
 
-class Pano extends Component<PanoProps, PanoState> {
+class Pano extends PureComponent<PanoProps, PanoState> {
 	//Members
 	currLoc: Location;
 	neighbors: Map<string, NeighborType>;
@@ -120,7 +122,8 @@ class Pano extends Component<PanoProps, PanoState> {
 		super(props);
 		this.state = {
 			isLoading: true,
-			lid: props.match.params.id
+			lid: props.match.params.id,
+			cameraY: 0.0
 		};
 		this.RenderPano = this.RenderPano.bind(this);
 	}
@@ -268,7 +271,7 @@ class Pano extends Component<PanoProps, PanoState> {
 
 	loadTexture() {
 		this.texture = this.loader.load(
-			require(`./assets/viewPano/resource/${this.generatePanoFilename()}`),
+			require(`@/assets/viewPano/resource/${this.generatePanoFilename()}`),
 			() => { //On pano first load complete
 				this.panoPageStore = new PanoPageStore(this.currLoc.coord.lat, this.currLoc.coord.lng, 0.0, this.currLoc.id);
 				this.setAllReactions();
@@ -462,6 +465,8 @@ class Pano extends Component<PanoProps, PanoState> {
 					this.animateTeleportationTextureFade();
 					let {coord, cameraY, id} = this.currLoc;
 					this.panoPageStore.updateValues(coord.lat, coord.lng, cameraY, id);
+
+					this.setState({ cameraY })
 					this.setPanoPageStoreIDChangeReaction()
 				},
 				undefined,
@@ -513,7 +518,7 @@ class Pano extends Component<PanoProps, PanoState> {
 	RenderSpinner = () => {
 		return (
 			<div className={"spinner-container"}>
-				<Spinner width={100} height={100} />
+				<Spinner width={100} />
 			</div>
 		)
 	}
@@ -785,6 +790,7 @@ class Pano extends Component<PanoProps, PanoState> {
 			}
 			camera.rotation.y += deltaX / 1000;
 			camera.rotation.y %= 2 * Math.PI;
+			// this.setState({ cameraY: camera.rotation.y })
 			this.panoPageStore.updatePegmanOffset(camera.rotation.y);
 		}
 		
@@ -928,6 +934,8 @@ class Pano extends Component<PanoProps, PanoState> {
 					//console.log("c");
 					let {coord, cameraY, id} = this.currLoc;
 					this.panoPageStore.updateValues(coord.lat, coord.lng, cameraY, id);
+
+					this.setState({ cameraY })
 					this.setPanoPageStoreIDChangeReaction();
 				},
 				undefined,
@@ -1141,10 +1149,10 @@ class Pano extends Component<PanoProps, PanoState> {
 	}
 	//TODO: change the pano window render size
 	render() {
-		const { isLoading } = this.state;
+		const { isLoading, cameraY } = this.state;
 		return isLoading ? (
 			<div className={"spinner-container"}>
-				<Spinner width={100} height={100} />
+				<Spinner width={100} />
 			</div>
 		) : (
 				<div className="Pano-container">

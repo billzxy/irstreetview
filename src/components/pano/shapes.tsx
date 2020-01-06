@@ -30,11 +30,11 @@ class Cylinder {
 
 class Arrow {
   //Members
-  mesh: THREE.Mesh
-  material: THREE.MeshBasicMaterial
-  geometry
-  hitbox
-  id: string
+  // mesh: THREE.Mesh
+  // material: THREE.MeshBasicMaterial
+  // id: string
+  geometry: THREE.Geometry
+  hitbox: THREE.Geometry
 
   constructor() {
     this.geometry = new THREE.Geometry()
@@ -54,14 +54,14 @@ class Arrow {
     )
 
     this.hitbox = new THREE.Geometry()
-    let margin = 0.3;
+    let margin = 0.3
     this.hitbox.vertices.push(
       new THREE.Vector3(0, 0, 0), // 0
-      new THREE.Vector3(1.5+margin, -2-margin, 0), // 1
-      new THREE.Vector3(1.5+margin, -0.5+margin, 0), // 2
-      new THREE.Vector3(0, 1.5+margin, 0), // 3
-      new THREE.Vector3(-1.5-margin, -0.5+margin, 0), // 4
-      new THREE.Vector3(-1.5-margin, -2-margin, 0) // 5
+      new THREE.Vector3(1.5 + margin, -2 - margin, 0), // 1
+      new THREE.Vector3(1.5 + margin, -0.5 + margin, 0), // 2
+      new THREE.Vector3(0, 1.5 + margin, 0), // 3
+      new THREE.Vector3(-1.5 - margin, -0.5 + margin, 0), // 4
+      new THREE.Vector3(-1.5 - margin, -2 - margin, 0) // 5
     )
     this.hitbox.faces.push(
       new THREE.Face3(0, 1, 2),

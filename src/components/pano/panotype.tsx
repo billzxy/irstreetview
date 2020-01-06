@@ -1,54 +1,48 @@
-import React, { Component, useEffect, useRef } from "react";
-import PropTypes from 'prop-types';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import React, { Component } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
 import { observable, reaction } from "mobx";
 import { observer } from "mobx-react";
-import PanoPageStore from "./pageStore"
-import { Button, ButtonGroup } from 'reactstrap';
+import PanoPageStore from "./pageStore";
+import { Button, ButtonGroup } from "reactstrap";
 
+export interface PanoTypeControllerProps {
+	panoPageStore: PanoPageStore;
+}
 
 @observer
-export default class PanoTypeController extends Component<{panoPageStore},{}>{
+export default class PanoTypeController extends Component<
+	PanoTypeControllerProps
+> {
+	currPanoType = 0;
 
-    constructor(props){
-        super(props);
-    }
+	changePanoTypeInStore = (type: number) => {
+		if (this.props.panoPageStore.typeLock) return;
+		this.props.panoPageStore.panoType = type;
+		this.currPanoType = type;
+	};
 
-    currPanoType = 0;
-    
-    changePanoTypeInStore = (type) =>{
-        if(this.props.panoPageStore.typeLock)
-            return ;
-        this.props.panoPageStore.panoType = type;
-        this.currPanoType = type;
-    }
+	mxOnClick = (e: React.MouseEvent) => {
+		e.preventDefault();
+		this.changePanoTypeInStore(0);
+	};
 
-    mxOnClick = (e) => {
-        e.preventDefault();
-        this.changePanoTypeInStore(0);
-    }
+	irOnClick = (e: React.MouseEvent) => {
+		this.changePanoTypeInStore(1);
+		e.preventDefault();
+	};
 
-    irOnClick = (e) => {
-        this.changePanoTypeInStore(1);
-        e.preventDefault();
-    }
+	panoTypeSelectorElement = () => {
+		return (
+			<div className="typeSelector">
+				<ButtonGroup className="buttons" size="lg">
+					<Button onClick={this.mxOnClick}>Mixed</Button>
+					<Button onClick={this.irOnClick}>Infrared</Button>
+				</ButtonGroup>
+			</div>
+		);
+	};
 
-    panoTypeSelectorElement = () => {
-        return (
-            <div className="typeSelector">
-                <ButtonGroup className="buttons" size="lg">
-                    <Button onClick={this.mxOnClick}>Mixed</Button>
-                    <Button onClick={this.irOnClick}>Infrared</Button>
-                </ButtonGroup>
-            </div>
-        );
-    }
-
-    render() {
-        return (
-            <> 
-                <this.panoTypeSelectorElement /> 
-            </>
-        )
-    }
+	render() {
+		return <this.panoTypeSelectorElement />;
+	}
 }

@@ -1,92 +1,78 @@
 import React, { Component, useEffect, useRef } from "react";
-import { observable, reaction } from "mobx";
+import { observable, reaction, IReactionDisposer } from "mobx";
 import { observer } from "mobx-react";
-import PanoPageStore from "./pageStore"
+import PanoPageStore from "./pageStore";
 
 const maxZoom = 2;
 
+export interface ZoomControllerProps {
+	panoPageStore: PanoPageStore;
+}
+
+export interface ZoomControllerState {
+	zoomerInOpacity: number;
+	zoomerOutOpacity: number;
+	[key: string]: any;
+}
 @observer
-export default class ZoomController extends Component<{panoPageStore},{}>{
+export default class ZoomController extends Component<
+	ZoomControllerProps,
+	ZoomControllerState
+> {
+	state = {
+		zoomerInOpacity: 0.2,
+		zoomerOutOpacity: 0.2
+	};
 
-    constructor(props){
-        super(props);
-    }
+	zoomerReactionDisposer?: IReactionDisposer;
+	zBase = require("@/assets/viewPano/zoomerBase.svg");
+	zPlus = require("@/assets/viewPano/zoomerPlus.svg");
+	zMinus = require("@/assets/viewPano/zoomerMinus.svg");
+	currZoomLevel = 0;
 
-    zoomerReactionDisposer;
-    zBase = require("../../assets/viewPano/zoomerBase.svg");
-    zPlus = require("../../assets/viewPano/zoomerPlus.svg");
-    zMinus = require("../../assets/viewPano/zoomerMinus.svg");
-    zoomerInElement;
-    zoomerOutElement;
-    currZoomLevel = 0;
+	zoomerInOnClick = (e: React.MouseEvent) => {
+		e.preventDefault();
+		this.props.panoPageStore.zoomIn();
+	};
 
-    componentDidMount(){
-        this.zoomerElementHandlerInit();
-    }
+	zoomerOutOnClick = (e: React.MouseEvent) => {
+		e.preventDefault();
+		this.props.panoPageStore.zoomOut();
+	};
 
-    zoomerElementHandlerInit = () => {
-        this.zoomerInElement = document.getElementById("zoomerIn");
-        this.zoomerOutElement = document.getElementById("zoomerOut");
-        this.zoomerInElement.addEventListener("mouseup", e => this.zoomerInOnClick(e), false);
-        this.zoomerOutElement.addEventListener("mouseup", e => this.zoomerOutOnClick(e), false);
-        this.zoomerInElement.addEventListener("mouseover", e => this.zoomerInOver(e), false);
-        this.zoomerOutElement.addEventListener("mouseover", e => this.zoomerOutOver(e), false);
-        this.zoomerInElement.addEventListener("mouseout", e => this.zoomerInOut(e), false);
-        this.zoomerOutElement.addEventListener("mouseout", e => this.zoomerOutOut(e), false);
-    }
+	opacityChangeFactory = (
+		key: "zoomerInOpacity" | "zoomerOutOpacity",
+		value: number
+	) => (e: React.MouseEvent) => {
+		e.preventDefault();
+		this.setState({ [key]: value });
+	};
 
-    zoomerInOnClick = (e) => {
-        e.preventDefault();
-        this.props.panoPageStore.zoomIn();
-    }
+	render() {
+		const { zoomerInOpacity, zoomerOutOpacity } = this.state;
 
-    zoomerOutOnClick = (e) => {
-        e.preventDefault();
-        this.props.panoPageStore.zoomOut();
-    }
-
-    zoomerInOver = (e) => {
-        e.preventDefault();
-        this.zoomerInElement.style.opacity = 0.5;
-    }
-
-    zoomerOutOver = (e) => {
-        e.preventDefault();
-        this.zoomerOutElement.style.opacity = 0.5;
-    }
-
-    zoomerInOut = (e) => {
-        e.preventDefault();
-        this.zoomerInElement.style.opacity = 0.2;
-    }
-
-    zoomerOutOut = (e) => {
-        e.preventDefault();
-        this.zoomerOutElement.style.opacity = 0.2;
-    }
-
-    ZoomerElement = () => {
-        return (
-            <div>
-                <div id="zoomerBase">
-                    <img src={this.zBase} alt="Zoom Controller" />
-                    <div id="zoomerIn">
-                        <img src={this.zPlus} alt="Zoom In" />
-                    </div>
-                    <div id="zoomerOut">
-                        <img src={this.zMinus} alt="Zoom Out" />
-                    </div>
-                </div>
-
-            </div>
-        );
-    }
-
-    render() {
-        return (
-            <> 
-                <this.ZoomerElement /> 
-            </>
-        )
-    }
+		return (
+			<div>
+				<div id="zoomerBase">
+					<img src={this.zBase} alt="Zoom Controller" />
+					<div
+						onMouseUp={this.zoomerInOnClick}
+						onMouseOut={this.opacityChangeFactory("zoomerInOpacity", 0.2)}
+						onMouseOver={this.opacityChangeFactory("zoomerInOpacity", 0.5)}
+						style={{ opacity: zoomerInOpacity }}
+					>
+						<img src={this.zPlus} alt="Zoom In" />
+					</div>
+					<div
+						onMouseUp={this.zoomerOutOnClick}
+						onMouseOut={this.opacityChangeFactory("zoomerOutOpacity", 0.2)}
+						onMouseOver={this.opacityChangeFactory("zoomerOutOpacity", 0.5)}
+						style={{ opacity: zoomerOutOpacity }}
+					>
+						<img src={this.zMinus} alt="Zoom Out" />
+					</div>
+				</div>
+			</div>
+		);
+	}
 }

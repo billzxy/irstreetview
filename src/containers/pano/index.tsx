@@ -24,7 +24,7 @@ import "./styles.css";
 
 import * as Consts from "./constants";
 import {Members, Flags, Locks, ThreeObjs} from "./members"
-import {MemberControls} from "./controls"
+import {Methods} from "./methods"
 import {Animations} from "./animations"
 
 //import { observer } from "mobx-react";
@@ -52,13 +52,13 @@ type PanoState = {
 	cameraY: number;
 };
 
-class Pano extends PureComponent<PanoProps, PanoState> {
+export class Pano extends PureComponent<PanoProps, PanoState> {
 	members: Members;
 	flags: Flags;
 	locks: Locks;
 	threeObjs: ThreeObjs;
 
-	memberControls: MemberControls;
+	methods: Methods;
 	animations: Animations;
 
 	constructor(props) {
@@ -70,8 +70,8 @@ class Pano extends PureComponent<PanoProps, PanoState> {
 		this.locks = new Locks();
 		this.threeObjs = new ThreeObjs();
 
-		this.memberControls = new MemberControls(this.members, this.flags, this.locks, this.threeObjs);
-		this.animations = new MemberControls(this.members, this.flags, this.locks, this.threeObjs);
+		this.methods = new Methods(this, this.members, this.flags, this.locks, this.threeObjs);
+		this.animations = new Animations(this.members, this.flags, this.locks, this.threeObjs);
 
 		this.state = {
 			isLoading: true,
@@ -88,23 +88,14 @@ class Pano extends PureComponent<PanoProps, PanoState> {
 
 	componentDidMount() {
 		disableBodyScroll(document.querySelector("#interface"));
-		var setCurrLocAndNeighbors = async () => {
-			//setCurrLoc
-			this.members.currLoc = new Location(this.panoId);
-
-			await this.members.currLoc.setAllAttr().then(() => {
-				this.loadTexture();
-			});
-			//setNeighbors
-			this.members.neighbors = new Map();
-			this.setNeighbors();
-		};
-		setCurrLocAndNeighbors();
+		this.methods.setCurrLocAndNeighbors();
 	}
 
 	componentWillUnmount() {
 		console.log("Unmount pano...");
 	}
+
+	panoSetStates()
 
 	onChangeCurId = (newId: string) => {
 		this.setState({ lid: newId }, () => {
@@ -113,84 +104,12 @@ class Pano extends PureComponent<PanoProps, PanoState> {
 		});
 	};
 
-	async setNeighbors() {
-		//Only supports two neighbors for now
-		this.members.neighbors.clear(); //Purge previous neighbors
-		await this.members.currLoc.getNeighborIds();
-		let nidArr = this.members.currLoc.neighborArr;
-		if ((nidArr as any).length === 0) {
-			console.log("No neighbors discorvered...");
-			return;
-		} else {
-			for (let nid of nidArr as any) {
-				let nextLoc = new Location(nid);
-				await nextLoc.setAllAttr().then(() => {
-					this.addNeighbor(nextLoc);
-				});
-			}
-		}
-	}
-
-	addNeighbor(n: Location) {
-		this.members.neighbors.set(n.id, {
-			location: n,
-			distance: this.members.currLoc.getDistanceTo(n),
-			bearing: this.members.currLoc.getBearingTo(n)
-		});
-	}
-
 	toggleCursor(isPointer) {
 		if (isPointer) {
 			this.members.canvasStyle = { cursor: "pointer" };
 		} else {
 			this.members.canvasStyle = { cursor: "default" };
 		}
-	}
-
-	setPanoPageStoreIDChangeReaction() {
-		this.members.panoIdChangeReactionDisposer = reaction(
-			() => this.members.panoPageStore.id,
-			(id, reaction) => {
-				this.teleportToScene(id);
-			}
-		);
-	}
-
-	setCameraResetReaction() {
-		this.members.panoViewDirectionResetReactionDisposer = reaction(
-			() => this.members.panoPageStore.reset,
-			(reset, reaction) => {
-				if (reset === true) {
-					this.CameraLookNorth(this.threeObjs.threeCamera);
-				}
-				this.members.panoPageStore.reset = false;
-			}
-		);
-	}
-
-	setZoomChangeReaction() {
-		this.members.panoZoomChangeReactionDisposer = reaction(
-			() => this.members.panoPageStore.zoom,
-			(zoom, reaction) => {
-				this.changeZoom();
-			}
-		);
-	}
-
-	setTypeChangeReaction() {
-		this.members.panoTypeChangeReactionDisposer = reaction(
-			() => this.members.panoPageStore.panoType,
-			(type, reaction) => {
-				this.changePanoType(type);
-			}
-		);
-	}
-
-	setAllReactions() {
-		this.setPanoPageStoreIDChangeReaction();
-		this.setCameraResetReaction();
-		this.setZoomChangeReaction();
-		this.setTypeChangeReaction();
 	}
 
 	onScroll = event => {
@@ -222,64 +141,10 @@ class Pano extends PureComponent<PanoProps, PanoState> {
 		}
 	}
 
-	loadTexture() {
-		this.threeObjs.texture = this.threeObjs.loader.load(
-			require(`@/assets/viewPano/resource/${this.generatePanoFilename()}`),
-			() => {
-				//On pano first load complete
-				this.members.panoPageStore = new PanoPageStore(
-					this.members.currLoc.coord.lat,
-					this.members.currLoc.coord.lng,
-					0.0,
-					this.members.currLoc.id
-				);
-				this.setAllReactions();
-				this.setState({ isLoading: false });
-			},
-			undefined,
-			err => {
-				console.error(err);
-			}
-		);
-
-		this.threeObjs.cylindermaterial = new THREE.MeshBasicMaterial({
-			map: this.threeObjs.texture,
-			side: THREE.DoubleSide
-		});
-		this.threeObjs.cylindermesh = new THREE.Mesh(
-			this.threeObjs.cylindergeometry,
-			this.threeObjs.cylindermaterial
-		);
-		this.threeObjs.cylindergeometry.scale(-1, 1, 1);
-		//this.threeObjs.cylindermesh.position.y = 0
-		this.threeObjs.cylindermesh.rotation.y = this.members.currLoc.calibration;
-	}
-
-	/*
-	InitNeighborPins() {
-		console.log(this.threeObjs.lines);
-		if (this.threeObjs.lines.length !== 0) {
-			this.threeObjs.lines = [];
-		}
-		this.members.neighbors.forEach((loc, id) => {
-			let bearing = loc.bearing;
-			let line = new THREE.LineBasicMaterial({ color: "blue" });
-			let geometry = new THREE.Geometry();
-			geometry.vertices.push(new THREE.Vector3(0, -5, 0));
-			geometry.vertices.push(
-				new THREE.Vector3(
-					20 * Math.sin((bearing * Math.PI) / 180),
-					-5,
-					-20 * Math.cos((bearing * Math.PI) / 180)
-				)
-			);
-			this.threeObjs.lines.push(new THREE.Line(geometry, line));
-		});
-	}*/
 
 	changeZoom() {
-		if (this.locks.currPanoType) return;
-		this.locks.currPanoType = true;
+		if (this.locks.wheelLockTemp) return;
+		this.locks.wheelLockTemp = true;
 		this.members.panoPageStore.zoomLock = true;
 		this.members.panoZoomChangeReactionDisposer();
 		var zoomBegin = {
@@ -297,16 +162,16 @@ class Pano extends PureComponent<PanoProps, PanoState> {
 		});
 		tweenZoom.onComplete(() => {
 			this.setZoomChangeReaction();
-			this.locks.currPanoType = false;
+			this.locks.wheelLockTemp = false;
 			this.members.panoPageStore.zoomLock = false;
 		});
 		tweenZoom.start();
 	}
 
 	changePanoType(type) {
-		if (this.locks.currPanoType || !this.members.currLoc.types.includes(this.flags.currPanoType))
+		if (this.flags.currPanoType || !this.members.currLoc.types.includes(this.flags.currPanoType))
 			return;
-		this.locks.currPanoType = true;
+		this.flags.currPanoType = true;
 		this.members.panoPageStore.typeLock = true;
 		this.members.panoTypeChangeReactionDisposer();
 		this.members.loaderSpinnerElem.style.visibility = "visible";

@@ -27,17 +27,14 @@ type NeighborType = {
 export class Members {
     currLoc: Location;
     neighbors: Map<string, NeighborType>;
-    panoPageStore = undefined;
-    panoIdChangeReactionDisposer: IReactionDisposer;
-    panoViewDirectionResetReactionDisposer: IReactionDisposer;
-    panoZoomChangeReactionDisposer: IReactionDisposer;
-    panoTypeChangeReactionDisposer: IReactionDisposer;
-    canvasStyle = { cursor: "default" };
-    loaderSpinnerElem = undefined;
-
     n0: NeighborType;
 	n1: NeighborType;
 	n2: NeighborType;
+
+    panoPageStore = undefined;
+    canvasStyle = { cursor: "default" };
+    loaderSpinnerElem = undefined;
+
 
     constructor(){
         this.currLoc = undefined;
@@ -73,7 +70,7 @@ export class ThreeObjs {
 	);
 	tempcylindermaterial: THREE.MeshBasicMaterial;
 	tempcylindermesh: THREE.Mesh;
-	threeCamera: THREE.Camera;
+	threeCamera = undefined;
 	threeScene: THREE.Scene;
 	threeCanvas = undefined;
 

@@ -23,18 +23,52 @@ import PanoTypeController from "@/components/pano/panotype";
 import "./styles.css";
 
 import * as Consts from "./constants";
-import {Members, Flags, Locks, ThreeObjs} from "./members"
+import {Pano} from "./index"
+import {Members, Flags, Locks, ThreeObjs} from "./members";
 
 export class Animations {
-    members:Members;
-	flags:Flags;
-	locks:Locks;
-	threeObjs:ThreeObjs;
+    pano: Pano;
 
-    constructor(members: Members, flags: Flags, locks: Locks, threeObjs: ThreeObjs){
-        this.members = members;
-		this.flags = flags;
-		this.locks = locks;
-		this.threeObjs = threeObjs;
+    constructor(pano: Pano){
+        this.pano = pano
+        
     }
+
+    animateTeleportationTextureFade = () => {
+		let fadeBegin = {
+			at: this.pano.threeObjs.cylindermaterial.opacity
+		};
+		let fadeEnd = {
+			at: 0.1
+		};
+		let crossfade = new TWEEN.Tween(fadeBegin)
+			.to(fadeEnd, 500)
+			.easing(TWEEN.Easing.Quadratic.InOut);
+		crossfade.onUpdate(() => {
+			//console.log(this.threeObjs.cylindermaterial);
+			this.pano.threeObjs.cylindermaterial.opacity = fadeBegin.at;
+		});
+		crossfade.onComplete(async () => {
+			//reset camera zoom and pos
+			this.pano.threeObjs.threeCamera.rotation.y = 0;
+			(this.pano.threeObjs.threeCamera as any).fov = 40;
+			(this.pano.threeObjs.threeCamera as any).updateProjectionMatrix();
+			//When animations are completed, textures are swapped
+
+			this.pano.threeObjs.cylindermaterial.map = this.pano.threeObjs.texture;
+			this.pano.threeObjs.cylindermesh.rotation.y = this.pano.members.currLoc.calibration;
+			this.pano.threeObjs.cylindermaterial.transparent = false;
+			this.pano.threeObjs.cylindermaterial.opacity = 1.0;
+
+			this.pano.threeObjs.threeScene.remove(this.pano.threeObjs.tempcylindermesh);
+			this.pano.threeObjs.tempcylindermesh.geometry.dispose();
+			this.pano.threeObjs.tempcylindermesh.material.dispose();
+			this.pano.threeObjs.tempcylindermesh = undefined;
+			this.pano.threeObjs.tempcylindergeometry.scale(-1, 1, 1);
+			await this.pano.methods.setNeighbors().then(this.pano.methods.RenderArrows);
+			this.pano.locks.animationLock = false;
+		});
+		this.pano.threeObjs.cylindermaterial.transparent = true;
+		crossfade.start();
+	};
 }

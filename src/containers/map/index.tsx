@@ -103,23 +103,6 @@ export class MapContainer extends Component<
 		}
 	}
 
-	bounds = new (this.props as any).google.maps.LatLngBounds();
-
-	setBounds() {
-		const { coords } = this.state;
-		if (!coords) return;
-
-		for (var i = 0; i < coords.length; i++) {
-			let coord = coords[i];
-			this.bounds.extend(
-				new (this.props as any).google.maps.LatLng({
-					lat: coord.lat,
-					lng: coord.lng
-				})
-			);
-		}
-	}
-
 	gotoPano(id: string, region: string) {
 		if (!this.mapWrapper.current) {
 			return;
@@ -140,6 +123,7 @@ export class MapContainer extends Component<
 		return this.props.match ? this.props.match.params.region : "boston";
 	}
 
+	// put in utils
 	addClusters = ({ map, google }: { map: any; google: GoogleAPI }) => {
 		if (!map || !google) {
 			return;
@@ -194,7 +178,6 @@ export class MapContainer extends Component<
 				zoom={zoom}
 				center={this.region ? REGIONS[this.region] : REGIONS.center}
 				initialCenter={REGIONS.center}
-				bounds={this.bounds}
 			/>
 		);
 	}

@@ -60,19 +60,16 @@ export class ThreeObjs {
 	loader = new THREE.TextureLoader();
 	lines = [];
 
-	tempcylindergeometry = new THREE.CylinderBufferGeometry(
-		20.1,
-		20.1,
-		15,
-		100,
-		1,
-		true
-	);
+	pinSphereGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+	pinNeedleGeometry = new THREE.CylinderGeometry(0.075, 0.025, 3, 10, 1, false);
+	tempcylindergeometry = new THREE.CylinderBufferGeometry(20.1, 20.1, 15, 100, 1, true);
 	tempcylindermaterial: THREE.MeshBasicMaterial;
-	tempcylindermesh: THREE.Mesh;
+    tempcylindermesh: THREE.Mesh;
+    threeRenderer: THREE.WebGLRenderer;
 	threeCamera = undefined;
 	threeScene: THREE.Scene;
-	threeCanvas = undefined;
+    threeCanvas = undefined;
+    threeRaycaster: THREE.Raycaster;
 
 	cone0: THREE.Mesh;
 	cone1: THREE.Mesh;
@@ -84,11 +81,11 @@ export class ThreeObjs {
 
 	coneg0: THREE.Group;
 	coneg1: THREE.Group;
-	coneg2: THREE.Group;
+    coneg2: THREE.Group;
+    
+    navigatorPlate: THREE.Group;
 
-	pinSphereGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-	pinNeedleGeometry = new THREE.CylinderGeometry(0.075, 0.025, 3, 10, 1, false);
-	
+    raycastedObjects: THREE.Object3D[] = [];
     
     mouseSelectedArrowMesh: THREE.Mesh;
 

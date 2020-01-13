@@ -142,8 +142,9 @@ export class Methods {
 					this.pano.threeObjs.threeScene.add(this.pano.threeObjs.tempcylindermesh);
 					this.pano.animations.animateTeleportationTextureFade();
 					let { coord, cameraY, id } = this.pano.members.currLoc;
+					//Temporary solution
+					cameraY = -this.threeObjs.threeCamera.rotation.y;
 					this.pano.members.panoPageStore.updateValues(coord.lat, coord.lng, cameraY, id);
-
 					this.pano.panoSetStates({ cameraY });
 					this.pano.reactions.panoTypeChangeReactionDisposer();
 				},
@@ -216,7 +217,7 @@ export class Methods {
 				arrowSpacing * Math.sin((this.pano.members.n2.bearing * Math.PI) / 180);
 			//rotation
 			this.pano.threeObjs.cone2.rotation.x = -1.5708;
-			this.threeObjs.cone2.rotation.z = (-this.pano.members.n2.bearing * Math.PI) / 180;
+			this.pano.threeObjs.cone2.rotation.z = (-this.pano.members.n2.bearing * Math.PI) / 180;
 			//position
 			this.pano.threeObjs.conevis2.position.z =
 				-arrowSpacing * Math.cos((this.pano.members.n2.bearing * Math.PI) / 180);
@@ -230,7 +231,16 @@ export class Methods {
 		}
 	};
     
-
+    rotateScene = deltaX => {
+        if (this.pano.locks.animationLock) return;
+        if (deltaX !== 0) {
+            this.pano.isDraggin = true;
+        }
+        this.pano.threeObjs.threeCamera.rotation.y += deltaX / 1000;
+        this.pano.threeObjs.threeCamera.rotation.y %= 2 * Math.PI;
+        // this.setState({ cameraY: camera.rotation.y })
+        this.pano.members.panoPageStore.updatePegmanOffset(this.pano.threeObjs.threeCamera.rotation.y);
+    };
     
 
 }

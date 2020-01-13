@@ -46,7 +46,7 @@ export class Reactions {
 		this.panoIdChangeReactionDisposer = reaction(
 			() => this.pano.members.panoPageStore.id,
 			(id, reaction) => {
-				this.teleportToScene(id);
+				this.pano.methods.teleportToScene(id);
 			}
 		);
 	}
@@ -56,7 +56,7 @@ export class Reactions {
 			() => this.pano.members.panoPageStore.reset,
 			(reset, reaction) => {
 				if (reset === true) {
-					this.CameraLookNorth(this.pano.threeObjs.threeCamera);
+					this.pano.CameraLookNorth(this.pano.threeObjs.threeCamera);
 				}
 				this.pano.members.panoPageStore.reset = false;
 			}
@@ -67,7 +67,7 @@ export class Reactions {
 		this.panoZoomChangeReactionDisposer = reaction(
 			() => this.pano.members.panoPageStore.zoom,
 			(zoom, reaction) => {
-				this.changeZoom();
+				this.pano.changeZoom();
 			}
 		);
 	}
@@ -76,7 +76,7 @@ export class Reactions {
 		this.panoTypeChangeReactionDisposer = reaction(
 			() => this.pano.members.panoPageStore.panoType,
 			(type, reaction) => {
-				this.changePanoType(type);
+				this.pano.changePanoType(type);
 			}
 		);
     }

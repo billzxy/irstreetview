@@ -26,6 +26,7 @@ import * as Consts from "./constants";
 import {Members, Flags, Locks, ThreeObjs} from "./members"
 import {Methods} from "./methods"
 import {Animations} from "./animations"
+import {Reactions} from "./reactions";
 
 //import { observer } from "mobx-react";
 //import OrbitControls from 'three-orbitcontrols'
@@ -60,6 +61,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 
 	methods: Methods;
 	animations: Animations;
+	reactions: Reactions;
 
 	constructor(props) {
 		super(props);
@@ -70,8 +72,9 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 		this.locks = new Locks();
 		this.threeObjs = new ThreeObjs();
 
-		this.methods = new Methods(this, this.members, this.flags, this.locks, this.threeObjs);
-		this.animations = new Animations(this.members, this.flags, this.locks, this.threeObjs);
+		this.methods = new Methods(this);
+		this.animations = new Animations(this);
+		this.reactions = new Reactions(this);
 
 		this.state = {
 			isLoading: true,
@@ -95,12 +98,14 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 		console.log("Unmount pano...");
 	}
 
-	panoSetStates()
+	panoSetStates(state){
+		this.setState(state);
+	}
 
 	onChangeCurId = (newId: string) => {
 		this.setState({ lid: newId }, () => {
 			const { lid } = this.state;
-			this.teleportToScene(lid);
+			this.methods.teleportToScene(lid);
 		});
 	};
 
@@ -126,10 +131,97 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 		this.locks.wheelLockTemp = false;
 		/*/// Following code let wheel controls y-axis scene rotation
 		if(event.path[0]===canvas){
-			var deltaY = event.wheelDeltaY / 3;
+			let deltaY = event.wheelDeltaY / 3;
 			rotateScene(deltaY);
 		}*/
 	};
+
+	// Mouse drag rotation controls
+	mouseDown: boolean = false;
+	mouse = { x: 0, y: 0 };
+	mouseX: number = 0;
+	mouseY: number = 0;
+	isDraggin: boolean = false;
+	startX: number = 0;
+
+	onMouseMove(evt) {
+		if (this.mouseDown) {
+			evt.preventDefault();
+			let deltaX = evt.clientX - this.mouseX,
+				deltaY = evt.clientY - this.mouseY;
+			this.mouseX = evt.clientX;
+			this.mouseY = evt.clientY;
+
+			this.methods.rotateScene(deltaX);
+		}
+	}
+
+	onMouseMove2 = event => {
+		if (this.mouseDown) return;
+		if (this.threeObjs.navigatorPlate) {
+			event.preventDefault();
+			this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+			this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+			this.threeObjs.threeRaycaster.setFromCamera(this.mouse, this.threeObjs.threeCamera);
+			let intersects = this.threeObjs.threeRaycaster.intersectObjects(this.threeObjs.raycastedObjects);
+			if (intersects.length > 0) {
+				let intersect = intersects[0];
+				//console.log( intersects[ 0 ]);
+				if (intersects.length === 1) {
+					//intersect.object===rcplane){
+					//console.log(compassGroup.current);
+					this.threeObjs.navigatorPlate.visible = true;
+					this.threeObjs.navigatorPlate.position
+						.copy(intersect.point)
+						.add(new THREE.Vector3(0, 0.01, 0));
+				} else {
+					this.threeObjs.navigatorPlate.visible = false;
+				}
+			}
+		}
+	};
+
+	onMouseDown(evt) {
+		evt.preventDefault();
+		this.mouseDown = true;
+		this.mouseX = evt.clientX;
+		this.mouseY = evt.clientY;
+	}
+
+	onMouseUp(evt) {
+		evt.preventDefault();
+		this.mouseDown = false;
+		this.isDraggin = false;
+	}
+
+	//Touch rotation controls
+
+	onTouchStart(event) {
+		this.startX = event.targetTouches[0].pageX;
+	}
+
+	onTouchMove(event) {
+		let deltaX = event.targetTouches[0].pageX - this.startX;
+		this.startX = event.targetTouches[0].pageX;
+		this.methods.rotateScene(deltaX);
+	}
+
+	onWindowResize() {
+		this.threeObjs.threeRenderer.setSize(this.threeObjs.threeCanvas.clientWidth, this.threeObjs.threeCanvas.clientHeight);
+		this.threeObjs.threeCamera.aspect = this.threeObjs.threeCanvas.clientWidth / this.threeObjs.threeCanvas.clientHeight;
+		this.threeObjs.threeCanvas.updateProjectionMatrix();
+	}
+
+
+	setUpEventListeners() {
+		this.threeObjs.threeCanvas.addEventListener("mousemove", e => this.onMouseMove(e), false);
+		window.addEventListener("mousemove", this.onMouseMove2, false);
+		this.threeObjs.threeCanvas.addEventListener("mousedown", e => this.onMouseDown(e), false);
+		this.threeObjs.threeCanvas.addEventListener("mouseup", e => this.onMouseUp(e), false);
+		this.threeObjs.threeCanvas.addEventListener("touchmove", e => this.onTouchMove(e), false);
+		this.threeObjs.threeCanvas.addEventListener("touchstart", e => this.onTouchStart(e), false);
+		window.addEventListener("resize", this.onWindowResize, false);
+	}
 
 	generatePanoFilename() {
 		if (this.members.currLoc.types.includes(this.flags.currPanoType)) {
@@ -146,14 +238,14 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 		if (this.locks.wheelLockTemp) return;
 		this.locks.wheelLockTemp = true;
 		this.members.panoPageStore.zoomLock = true;
-		this.members.panoZoomChangeReactionDisposer();
-		var zoomBegin = {
+		this.reactions.panoZoomChangeReactionDisposer();
+		let zoomBegin = {
 			at: this.threeObjs.threeCamera.fov
 		};
-		var zoomEnd = {
+		let zoomEnd = {
 			at: Consts.ZOOMFOV[this.members.panoPageStore.zoom]
 		};
-		var tweenZoom = new TWEEN.Tween(zoomBegin)
+		let tweenZoom = new TWEEN.Tween(zoomBegin)
 			.to(zoomEnd, 150)
 			.easing(TWEEN.Easing.Quadratic.InOut);
 		tweenZoom.onUpdate(() => {
@@ -161,7 +253,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 			this.threeObjs.threeCamera.updateProjectionMatrix();
 		});
 		tweenZoom.onComplete(() => {
-			this.setZoomChangeReaction();
+			this.reactions.setZoomChangeReaction();
 			this.locks.wheelLockTemp = false;
 			this.members.panoPageStore.zoomLock = false;
 		});
@@ -169,11 +261,11 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 	}
 
 	changePanoType(type) {
-		if (this.flags.currPanoType || !this.members.currLoc.types.includes(this.flags.currPanoType))
+		if (this.locks.animationLock || !this.members.currLoc.types.includes(this.flags.currPanoType))
 			return;
-		this.flags.currPanoType = true;
+		this.locks.animationLock = true;
 		this.members.panoPageStore.typeLock = true;
-		this.members.panoTypeChangeReactionDisposer();
+		this.reactions.panoTypeChangeReactionDisposer();
 		this.members.loaderSpinnerElem.style.visibility = "visible";
 		this.flags.currPanoType = type;
 		//console.log(this.generatePanoFilename());
@@ -183,7 +275,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 			() => {
 				//onComplete
 				this.members.loaderSpinnerElem.style.visibility = "hidden";
-				this.setTypeChangeReaction();
+				this.reactions.setTypeChangeReaction();
 				this.threeObjs.tempcylindermaterial = new THREE.MeshBasicMaterial({
 					map: this.threeObjs.texture,
 					side: THREE.DoubleSide
@@ -205,13 +297,13 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 	}
 
 	animatePanoTypeChangeTextureFade = () => {
-		var fadeBegin = {
+		let fadeBegin = {
 			at: this.threeObjs.cylindermaterial.opacity
 		};
-		var fadeEnd = {
+		let fadeEnd = {
 			at: 0.1
 		};
-		var crossfade = new TWEEN.Tween(fadeBegin)
+		let crossfade = new TWEEN.Tween(fadeBegin)
 			.to(fadeEnd, 500)
 			.easing(TWEEN.Easing.Quadratic.InOut);
 		crossfade.onUpdate(() => {
@@ -229,7 +321,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 			this.threeObjs.tempcylindermesh.material.dispose();
 			this.threeObjs.tempcylindermesh = undefined;
 			this.threeObjs.tempcylindergeometry.scale(-1, 1, 1);
-			this.locks.currPanoType = false;
+			this.locks.animationLock = false;
 			this.members.panoPageStore.typeLock = false;
 		});
 		this.threeObjs.cylindermaterial.transparent = true;
@@ -237,16 +329,16 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 	};
 
 	CameraLookNorth(camera) {
-		if (this.locks.currPanoType) return;
-		this.locks.currPanoType = true;
-		this.members.panoViewDirectionResetReactionDisposer();
-		var rotBegin = {
+		if (this.locks.animationLock) return;
+		this.locks.animationLock = true;
+		this.reactions.panoViewDirectionResetReactionDisposer();
+		let rotBegin = {
 			at: camera.rotation.y
 		};
-		var rotEnd = {
+		let rotEnd = {
 			at: 0
 		};
-		var tweenRot = new TWEEN.Tween(rotBegin)
+		let tweenRot = new TWEEN.Tween(rotBegin)
 			.to(rotEnd, 750)
 			.easing(TWEEN.Easing.Quadratic.InOut);
 		tweenRot.onUpdate(() => {
@@ -256,87 +348,11 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 		tweenRot.onComplete(() => {
 			camera.rotation.y = 0;
 			this.members.panoPageStore.updatePegmanOffset(0.0);
-			this.setCameraResetReaction();
-			this.locks.currPanoType = false;
+			this.reactions.setCameraResetReaction();
+			this.locks.animationLock = false;
 		});
 		tweenRot.start();
 	}
-
-	teleportToScene = async id => {
-		this.members.panoIdChangeReactionDisposer();
-		this.locks.currPanoType = true;
-		this.members.loaderSpinnerElem.style.visibility = "visible";
-		//console.log("Teleporting to: "+id);
-		this.members.currLoc = new Location(id);
-		await this.members.currLoc.setAllAttr().then(() => {
-			this.threeObjs.texture = this.threeObjs.loader.load(
-				require(`@/assets/viewPano/resource/${this.generatePanoFilename()}`),
-				() => {
-					//onComplete
-					this.members.loaderSpinnerElem.style.visibility = "hidden";
-					this.threeObjs.tempcylindermaterial = new THREE.MeshBasicMaterial({
-						map: this.threeObjs.texture,
-						side: THREE.DoubleSide
-					});
-					this.threeObjs.tempcylindermesh = new THREE.Mesh(
-						this.threeObjs.tempcylindergeometry,
-						this.threeObjs.tempcylindermaterial
-					);
-					this.threeObjs.tempcylindergeometry.scale(-1, 1, 1);
-					this.threeObjs.tempcylindermesh.rotation.y = this.members.currLoc.calibration;
-					this.threeObjs.threeScene.add(this.threeObjs.tempcylindermesh);
-					this.animateTeleportationTextureFade();
-					let { coord, cameraY, id } = this.members.currLoc;
-					this.members.panoPageStore.updateValues(coord.lat, coord.lng, cameraY, id);
-
-					this.setState({ cameraY });
-					this.setPanoPageStoreIDChangeReaction();
-				},
-				undefined,
-				err => {
-					console.error(err);
-				}
-			);
-		});
-	};
-
-	animateTeleportationTextureFade = () => {
-		var fadeBegin = {
-			at: this.threeObjs.cylindermaterial.opacity
-		};
-		var fadeEnd = {
-			at: 0.1
-		};
-		var crossfade = new TWEEN.Tween(fadeBegin)
-			.to(fadeEnd, 500)
-			.easing(TWEEN.Easing.Quadratic.InOut);
-		crossfade.onUpdate(() => {
-			//console.log(this.threeObjs.cylindermaterial);
-			this.threeObjs.cylindermaterial.opacity = fadeBegin.at;
-		});
-		crossfade.onComplete(async () => {
-			//reset camera zoom and pos
-			this.threeObjs.threeCamera.rotation.y = 0;
-			(this.threeObjs.threeCamera as any).fov = 40;
-			(this.threeObjs.threeCamera as any).updateProjectionMatrix();
-			//When animations are completed, textures are swapped
-
-			this.threeObjs.cylindermaterial.map = this.threeObjs.texture;
-			this.threeObjs.cylindermesh.rotation.y = this.members.currLoc.calibration;
-			this.threeObjs.cylindermaterial.transparent = false;
-			this.threeObjs.cylindermaterial.opacity = 1.0;
-
-			this.threeObjs.threeScene.remove(this.threeObjs.tempcylindermesh);
-			this.threeObjs.tempcylindermesh.geometry.dispose();
-			this.threeObjs.tempcylindermesh.material.dispose();
-			this.threeObjs.tempcylindermesh = undefined;
-			this.threeObjs.tempcylindergeometry.scale(-1, 1, 1);
-			await this.setNeighbors().then(this.RenderArrows);
-			this.locks.currPanoType = false;
-		});
-		this.threeObjs.cylindermaterial.transparent = true;
-		crossfade.start();
-	};
 
 	RenderSpinner = () => {
 		return (
@@ -346,87 +362,15 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 		);
 	};
 
-	RenderArrows = () => {
-		var iter = this.members.neighbors.keys();
-		//iter.next();
-		this.members.n0 = this.members.neighbors.get(iter.next().value);
-		console.log(this.members.currLoc.id);
-		let arrowSpacing = 7.5;
-		//position
-		this.threeObjs.cone0.position.z =
-			-arrowSpacing * Math.cos((this.members.n0.bearing * Math.PI) / 180);
-		this.threeObjs.cone0.position.x =
-			arrowSpacing * Math.sin((this.members.n0.bearing * Math.PI) / 180);
-		//rotation
-		this.threeObjs.cone0.rotation.x = -1.5708;
-		this.threeObjs.cone0.rotation.z = (-this.members.n0.bearing * Math.PI) / 180;
-		//position
-		this.threeObjs.conevis0.position.z =
-			-arrowSpacing * Math.cos((this.members.n0.bearing * Math.PI) / 180);
-		this.threeObjs.conevis0.position.x =
-			arrowSpacing * Math.sin((this.members.n0.bearing * Math.PI) / 180);
-		//rotation
-		this.threeObjs.conevis0.rotation.x = -1.5708;
-		this.threeObjs.conevis0.rotation.z = (-this.members.n0.bearing * Math.PI) / 180;
-
-		this.threeObjs.coneg1.visible = false;
-		this.threeObjs.coneg2.visible = false;
-		//this.threeObjs.cone0.geometry.computeBoundingSphere();
-
-		if (this.members.neighbors.size > 1) {
-			this.members.n1 = this.members.neighbors.get(iter.next().value);
-			this.threeObjs.coneg1.visible = true;
-			//position
-			this.threeObjs.cone1.position.z =
-				-arrowSpacing * Math.cos((this.members.n1.bearing * Math.PI) / 180);
-			this.threeObjs.cone1.position.x =
-				arrowSpacing * Math.sin((this.members.n1.bearing * Math.PI) / 180);
-			//rotation
-			this.threeObjs.cone1.rotation.x = -1.5708;
-			this.threeObjs.cone1.rotation.z = (-this.members.n1.bearing * Math.PI) / 180;
-			//position
-			this.threeObjs.conevis1.position.z =
-				-arrowSpacing * Math.cos((this.members.n1.bearing * Math.PI) / 180);
-			this.threeObjs.conevis1.position.x =
-				arrowSpacing * Math.sin((this.members.n1.bearing * Math.PI) / 180);
-			//rotation
-			this.threeObjs.conevis1.rotation.x = -1.5708;
-			this.threeObjs.conevis1.rotation.z = (-this.members.n1.bearing * Math.PI) / 180;
-			//console.log(this.threeObjs.cone1.rotation.z);
-			//this.threeObjs.cone1.geometry.computeBoundingSphere();
-			//console.log(this.threeObjs.cone1.localToWorld(this.threeObjs.cone1.geometry.boundingSphere.center));
-		}
-		if (this.members.neighbors.size === 3) {
-			this.members.n2 = this.members.neighbors.get(iter.next().value);
-			this.threeObjs.coneg2.visible = true;
-			//position
-			this.threeObjs.cone2.position.z =
-				-arrowSpacing * Math.cos((this.members.n2.bearing * Math.PI) / 180);
-			this.threeObjs.cone2.position.x =
-				arrowSpacing * Math.sin((this.members.n2.bearing * Math.PI) / 180);
-			//rotation
-			this.threeObjs.cone2.rotation.x = -1.5708;
-			this.threeObjs.cone2.rotation.z = (-this.members.n2.bearing * Math.PI) / 180;
-			//position
-			this.threeObjs.conevis2.position.z =
-				-arrowSpacing * Math.cos((this.members.n2.bearing * Math.PI) / 180);
-			this.threeObjs.conevis2.position.x =
-				arrowSpacing * Math.sin((this.members.n2.bearing * Math.PI) / 180);
-			//rotation
-			this.threeObjs.conevis2.rotation.x = -1.5708;
-			this.threeObjs.conevis2.rotation.z = (-this.members.n2.bearing * Math.PI) / 180;
-			//this.threeObjs.cone2.geometry.computeBoundingSphere();
-			//console.log(this.threeObjs.cone2.rotation.z);
-		}
-	};
-
 	RenderPano() {
 		this.members.loaderSpinnerElem = document.getElementById("trans-spinner");
 		let { gl, camera, scene, canvas, raycaster } = useThree();
-		//var canvas = gl.domElement;  // for react-three-fiber v3.x
+		//let canvas = gl.domElement;  // for react-three-fiber v3.x
+		this.threeObjs.threeRenderer = gl;
 		this.threeObjs.threeCamera = camera;
 		this.threeObjs.threeScene = scene;
 		this.threeObjs.threeCanvas = canvas;
+		this.threeObjs.threeRaycaster = raycaster;
 
 		(camera as any).fov = 40;
 		//gl.setSize(window.innerWidth, window.innerHeight);
@@ -439,7 +383,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 		let conemesh = useRef();
 		let conemesh1 = useRef();
 		let conemesh2 = useRef();
-		//var mousedir = useRef();
+		//let mousedir = useRef();
 		let compassPlate = useRef();
 
 		this.threeObjs.cone0 = conemesh.current as any;
@@ -465,14 +409,11 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 		let c2Sphere;
 		let coneBoundingSpheres = [c0Sphere, c1Sphere, c2Sphere];
 
-		let mouse = { x: 0, y: 0 };
 		let arrow = new Arrow();
-		let mouseplateG = useRef();
+		let mouseplateG = useRef<THREE.Group>();
+		this.threeObjs.navigatorPlate = mouseplateG.current; 
 		let showMousePlate = true;
 		let isAnimating = false;
-		let isDraggin = false;
-
-		let rcObjects = [];
 
 		let planegeo = new THREE.PlaneGeometry(40, 40);
 		let planemat = new THREE.MeshBasicMaterial({
@@ -482,7 +423,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 			transparent: true
 		});
 		let rcplane = new THREE.Mesh(planegeo, planemat); //not a remotely-controlled plane, but a mathematical plane that involves in raycast
-		rcplane.rotation.set(-1.5708, 0, 0);
+		rcplane.rotation.set(-Math.PI/2, 0, 0);
 		rcplane.position.set(0, -1, 0);
 		scene.add(rcplane);
 
@@ -495,17 +436,19 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 			c2Sphere = this.threeObjs.cone2.geometry.boundingSphere;
 		};
 
+		let rcObjs: THREE.Object3D[] = [];
 		if (this.threeObjs.cone0 && this.threeObjs.cone1 && this.threeObjs.cone2 && compassPlate.current) {
 			//getInitialConeBoundingSpheres();
-			/*rcObjects.push(c0Sphere);
-			rcObjects.push(c1Sphere);
-			rcObjects.push(c2Sphere);*/
-			rcObjects.push(this.threeObjs.cone0);
-			rcObjects.push(this.threeObjs.cone1);
-			rcObjects.push(this.threeObjs.cone2);
-			//rcObjects.push(compassPlate.current);
-			rcObjects.push(rcplane);
-			//rcObjects.push(compassGroup.current);
+			/*this.threeObjs.raycastedObjects.push(c0Sphere);
+			this.threeObjs.raycastedObjects.push(c1Sphere);
+			this.threeObjs.raycastedObjects.push(c2Sphere);*/
+			rcObjs.push(this.threeObjs.cone0);
+			rcObjs.push(this.threeObjs.cone1);
+			rcObjs.push(this.threeObjs.cone2);
+			//this.threeObjs.raycastedObjects.push(compassPlate.current);
+			rcObjs.push(rcplane);
+			//this.threeObjs.raycastedObjects.push(compassGroup.current);
+			this.threeObjs.raycastedObjects = rcObjs;
 		}
 
 		let bsphere = useRef();
@@ -517,12 +460,12 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 			coneGroup.current.localToWorld(v1);
 		}
 
-		var distanceToArrowInWorldCoord = (mesh, index) => {
-			(mouseplateG.current as any).children[1].geometry.computeBoundingSphere();
-			let center0 = (mouseplateG.current as any).children[1].geometry
+		let distanceToArrowInWorldCoord = (mesh, index) => {
+			this.threeObjs.navigatorPlate.children[1].geometry.computeBoundingSphere();
+			let center0 = this.threeObjs.navigatorPlate.children[1].geometry
 				.boundingSphere.center;
 			let v0 = new Vector3(center0.x, center0.y, center0.z);
-			(mouseplateG.current as any).localToWorld(v0);
+			this.threeObjs.navigatorPlate.localToWorld(v0);
 
 			mesh.geometry.computeBoundingSphere();
 			coneBoundingSpheres[index] = mesh.geometry.boundinSphere;
@@ -533,8 +476,8 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 			return v0.distanceTo(v1);
 		};
 
-		var getClosestArrowAndAdjustDirection = () => {
-			if (!mouseplateG.current) return;
+		let getClosestArrowAndAdjustDirection = () => {
+			if (!this.threeObjs.navigatorPlate) return;
 			let arr = [this.threeObjs.cone0, this.threeObjs.cone1, this.threeObjs.cone2];
 			let dist = new Map<number, THREE.Mesh>();
 			for (let i = 0; i < arr.length; i++) {
@@ -544,123 +487,31 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 				dist.set(distanceToArrowInWorldCoord(arr[i], i), arr[i]);
 			}
 			let min = Math.min(...dist.keys());
-			(mouseplateG.current as any).rotation.z = dist.get(min).rotation.z;
+			this.threeObjs.navigatorPlate.rotation.z = dist.get(min).rotation.z;
 			this.threeObjs.mouseSelectedArrowMesh = dist.get(min);
 		};
 
-		var navigateWithMouse = () => {
+		let navigateWithMouse = () => {
 			let nArr = [this.members.n0, this.members.n1, this.members.n2];
 			let id = nArr[this.threeObjs.mouseSelectedArrowMesh.userData.neighbor].location.id;
 			transitionToScene(id);
 		};
-
-		var onMouseMove2 = event => {
-			if (mouseDown) return;
-			if (mouseplateG.current) {
-				event.preventDefault();
-				mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-				mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-				raycaster.setFromCamera(mouse, camera);
-				var intersects = raycaster.intersectObjects(rcObjects);
-				if (intersects.length > 0) {
-					var intersect = intersects[0];
-					//console.log( intersects[ 0 ]);
-					if (intersects.length === 1) {
-						//intersect.object===rcplane){
-						//console.log(compassGroup.current);
-						(mouseplateG.current as any).visible = true;
-						(mouseplateG.current as any).position
-							.copy(intersect.point)
-							.add(new THREE.Vector3(0, 0.01, 0));
-					} else {
-						(mouseplateG.current as any).visible = false;
-					}
-				}
-			}
-		};
-
-		// Mouse drag rotation controls
-		var mouseDown = false,
-			mouseX = 0,
-			mouseY = 0;
-
-		function onMouseMove(evt) {
-			if (mouseDown) {
-				evt.preventDefault();
-				var deltaX = evt.clientX - mouseX,
-					deltaY = evt.clientY - mouseY;
-				mouseX = evt.clientX;
-				mouseY = evt.clientY;
-
-				rotateScene(deltaX);
-			}
-		}
-
-		function onMouseDown(evt) {
-			evt.preventDefault();
-			mouseDown = true;
-			mouseX = evt.clientX;
-			mouseY = evt.clientY;
-		}
-
-		function onMouseUp(evt) {
-			evt.preventDefault();
-			mouseDown = false;
-			isDraggin = false;
-		}
-
-		//Touch rotation control
-		var startX = 0;
-
-		function onTouchStart(event) {
-			startX = event.targetTouches[0].pageX;
-		}
-
-		function onTouchMove(event) {
-			var deltaX = event.targetTouches[0].pageX - startX;
-			startX = event.targetTouches[0].pageX;
-			rotateScene(deltaX);
-		}
-
-		var rotateScene = deltaX => {
-			if (this.locks.currPanoType) return;
-			if (deltaX !== 0) {
-				isDraggin = true;
-			}
-			camera.rotation.y += deltaX / 1000;
-			camera.rotation.y %= 2 * Math.PI;
-			// this.setState({ cameraY: camera.rotation.y })
-			this.members.panoPageStore.updatePegmanOffset(camera.rotation.y);
-		};
-
-		function onWindowResize() {
-			gl.setSize(canvas.clientWidth, canvas.clientHeight);
-			(camera as any).aspect = canvas.clientWidth / canvas.clientHeight;
-			(camera as any).updateProjectionMatrix();
-		}
-
-		window.addEventListener("mousemove", onMouseMove2, false);
-		canvas.addEventListener("mousemove", e => onMouseMove(e), false);
-		canvas.addEventListener("mousedown", e => onMouseDown(e), false);
-		canvas.addEventListener("mouseup", e => onMouseUp(e), false);
-
-		canvas.addEventListener("touchmove", e => onTouchMove(e), false);
-		canvas.addEventListener("touchstart", e => onTouchStart(e), false);
-		window.addEventListener("resize", onWindowResize, false);
+		
+		this.setUpEventListeners();
 
 		if (!this.flags.eventListenersLoaded) {
 			canvas.addEventListener("mousewheel", e => this.onScroll(e), false);
 			this.flags.eventListenersLoaded = true;
 		}
 
-		var animateTransition = id => {
-			(mouseplateG.current as any).visible = false;
+		let animateTransition = id => {
+			this.threeObjs.navigatorPlate.visible = false;
 			isAnimating = true;
 			//Set up parameters for TWEEN animations
 			const depth = 13;
 			const resFov = 65;
 			const camAt = (this.members.neighbors.get(id).bearing * Math.PI) / 180;
-			var endAt = (-this.members.neighbors.get(id).bearing * Math.PI) / 180;
+			let endAt = (-this.members.neighbors.get(id).bearing * Math.PI) / 180;
 			if (camera.rotation.y > 0) {
 				endAt = 2 * Math.PI - (this.members.neighbors.get(id).bearing * Math.PI) / 180;
 			}
@@ -675,13 +526,13 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 			) {
 				endAt = -2 * Math.PI + endAt;
 			}
-			var rotBegin = {
+			let rotBegin = {
 				at: (camera as any).rotation.y
 			};
-			var rotEnd = {
+			let rotEnd = {
 				at: endAt
 			};
-			var tweenRot = new TWEEN.Tween(rotBegin)
+			let tweenRot = new TWEEN.Tween(rotBegin)
 				.to(rotEnd, 500)
 				.easing(TWEEN.Easing.Quadratic.InOut);
 			//console.log("begin: ",rotBegin," end: ",rotEnd);
@@ -695,19 +546,19 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 				this.members.panoPageStore.updatePegmanOffset(camera.rotation.y);
 			});
 
-			var zoom = {
+			let zoom = {
 				zVal: (camera as any).position.z,
 				xVal: (camera as any).position.x,
 				fovValue: (camera as any).fov,
 				opacity: this.threeObjs.cylindermaterial.opacity
 			};
-			var zoomEnd = {
+			let zoomEnd = {
 				zVal: -depth * Math.cos(camAt),
 				xVal: depth * Math.sin(camAt),
 				fovValue: resFov,
 				opacity: 0.1
 			};
-			var tweenZoom = new TWEEN.Tween(zoom).to(zoomEnd, 500);
+			let tweenZoom = new TWEEN.Tween(zoom).to(zoomEnd, 500);
 
 			tweenZoom.onUpdate(() => {
 				(camera as any).position.z = zoom.zVal;
@@ -734,9 +585,9 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 				this.threeObjs.tempcylindermesh = undefined;
 				this.threeObjs.tempcylindergeometry.scale(-1, 1, 1);
 				isAnimating = false;
-				(mouseplateG.current as any).visible = true;
-				await this.setNeighbors().then(this.RenderArrows); //.then(()=>{this.InitNeighborPins()});
-				this.locks.currPanoType = false;
+				this.threeObjs.navigatorPlate.visible = true;
+				await this.methods.setNeighbors().then(this.methods.RenderArrows); //.then(()=>{this.InitNeighborPins()});
+				this.locks.animationLock = false;
 				//console.log("b2");
 			});
 			tweenRot.chain(tweenZoom);
@@ -748,10 +599,10 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 		scene.add(this.threeObjs.cylindermesh);
 		//RenderCompass();
 
-		var transitionToScene = async pid => {
-			this.locks.currPanoType = true;
+		let transitionToScene = async pid => {
+			this.locks.animationLock = true;
 			this.members.loaderSpinnerElem.style.visibility = "visible";
-			this.members.panoIdChangeReactionDisposer();
+			this.reactions.panoIdChangeReactionDisposer();
 			if (!this.members.neighbors.get(pid)) {
 				return;
 			}
@@ -777,10 +628,12 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 					animateTransition(pid);
 					//console.log("c");
 					let { coord, cameraY, id } = this.members.currLoc;
+					//Temporary solution
+					cameraY = -this.threeObjs.threeCamera.rotation.y;
 					this.members.panoPageStore.updateValues(coord.lat, coord.lng, cameraY, id);
 
 					this.setState({ cameraY });
-					this.setPanoPageStoreIDChangeReaction();
+					this.reactions.panoTypeChangeReactionDisposer();
 				},
 				undefined,
 				err => {
@@ -790,11 +643,11 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 		};
 
 		if (this.threeObjs.cone0 && this.threeObjs.cone1 && this.threeObjs.cone2) {
-			this.RenderArrows();
+			this.methods.RenderArrows();
 		}
-		var coneGroup = useRef();
-		var compassGroup = useRef();
-		var triGeo = useRef();
+		let coneGroup = useRef();
+		let compassGroup = useRef();
+		let triGeo = useRef();
 		let triGeoArr = [
 			new THREE.Vector3(0, 1, 0),
 			new THREE.Vector3(-0.6, -1, 0),
@@ -814,7 +667,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 			}
 		}
 
-		var testMesh = useRef();
+		let testMesh = useRef();
 		if (testMesh.current) {
 			(testMesh.current as any).geometry.scale(2, 2, 2);
 		}
@@ -856,7 +709,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 							ref={conemesh}
 							geometry={cone.hitbox}
 							onClick={() => {
-								if (!this.locks.currPanoType) {
+								if (!this.locks.animationLock) {
 									transitionToScene(
 										this.members.n0.location.id
 									); /*this.members.currLoc.updateCalibration(camera)*/
@@ -899,7 +752,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 							ref={conemesh1}
 							geometry={cone.hitbox}
 							onClick={() => {
-								if (!this.locks.currPanoType) {
+								if (!this.locks.animationLock) {
 									transitionToScene(
 										this.members.n1.location.id
 									); /*this.members.currLoc.updateCalibration(camera)*/
@@ -942,7 +795,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 							ref={conemesh2}
 							geometry={cone.hitbox}
 							onClick={() => {
-								if (!this.locks.currPanoType) {
+								if (!this.locks.animationLock) {
 									transitionToScene(this.members.n2.location.id);
 								}
 							}}
@@ -1007,7 +860,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 					</mesh>
 				</group>
 
-				<group ref={mouseplateG} rotation={[-1.5708, 0, 0]}>
+				<group ref={mouseplateG} rotation={[-Math.PI/2, 0, 0]}>
 					<mesh
 						geometry={arrow.geometry}
 						position={[0, 0.05, 0.001]}
@@ -1023,7 +876,7 @@ export class Pano extends PureComponent<PanoProps, PanoState> {
 					<mesh
 						geometry={new THREE.CircleGeometry(0.4, 100, 0)}
 						onPointerUp={() => {
-							if (!isDraggin && !this.locks.currPanoType) {
+							if (!this.isDraggin && !this.locks.animationLock) {
 								navigateWithMouse();
 							}
 						}}

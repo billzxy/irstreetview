@@ -9,7 +9,7 @@
 		"body-scroll-lock": "^2.6.4",
 		"bootstrap": "^4.4.1",
 		"cors": "^2.8.5",
-		"express": "^4.17.1",
+		"express": "^4.17.3",
 		"geolib": "^3.0.4",
 		"google-maps-react": "git+https://github.com/billzxy/google-maps-react.git",
 		"mobx": "^5.14.0",
